@@ -11,6 +11,7 @@ export default {
         'Shadows_Into_Light': ["Shadows Into Light","cursive"],
       },
       colors:{
+        "background": "rgba(20,20,20,1)",
         'primary': 'rgba(35,35,35,1)',
         'secondary': 'rgba(64,64,64,1)',
       }
