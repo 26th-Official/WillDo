@@ -51,9 +51,13 @@ def PostData():
     return jsonify({"status": "success", "id": str(PostResult.inserted_id)})
 
 
-@app.route("/get", methods=["GET"])
-def GetData():
-    pass
+@app.route("/delete", methods=["POST"])
+def DeleteData():
+    data = request.get_json()
+    data.pop('_id')
+    print(data)
+    collection.delete_one(data)
+    return jsonify({"status": "success"})
 
 # This is to get all the data from DB
 @app.route("/getall")

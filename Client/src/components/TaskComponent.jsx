@@ -92,6 +92,21 @@ export const TaskComponent = () => {
 		}
 	}
 
+	function DeleteTask(data,index) {
+		console.log(data);
+		fetch("http://localhost:6565/delete", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data),
+		})
+			.then((res) => console.log(res.json()))
+			.then((res) => console.log(res));
+
+		const NewTaskList = Tasks.filter((item) => item !== data)
+		setTasks(NewTaskList)
+
+	}
+
 	// ==========================================================
 
 	return (
@@ -105,7 +120,9 @@ export const TaskComponent = () => {
 
 					{/* THis the task add button when controls the "AddTask" state */}
 					<i
-						onClick={() => setAddTask(true)}
+						onClick={() => {
+							setAddTask(true)
+						}}
 						className="fa fa-plus-circle text-2xl mx-6 mt-1 text-white/50
 					hover:text-white/100"
 						aria-hidden="true"></i>
@@ -126,6 +143,7 @@ export const TaskComponent = () => {
 									AddTaskRef.current.scrollHeight + "px";
 							}}
 							required
+							id="TaskTestBox"
 							placeholder="Please Enter a Task"
 							ref={AddTaskRef}
 							rows={1}
@@ -152,7 +170,7 @@ export const TaskComponent = () => {
 					</div>
 				)}
 
-				{/* The error paGGge is displayed if there are anyproblem in fetching the tasks */}
+				{/* The error page is displayed if there are anyproblem in fetching the tasks */}
 				{ErrorPage ? (
 					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
 						<div>
@@ -160,7 +178,10 @@ export const TaskComponent = () => {
 						</div>
 						<div>
 							Try Again Later or Click here
-							<i onClick={() => location.reload()} class="fas fa-arrow-rotate-right px-1" aria-hidden="true"></i>
+							<i
+								onClick={() => location.reload()}
+								class="fas fa-arrow-rotate-right px-1 cursor-pointer hover:text-green-300 hover:animate-pulse"
+								aria-hidden="true"></i>
 							to refresh
 						</div>
 					</div>
@@ -199,7 +220,7 @@ export const TaskComponent = () => {
 									key={index}
 									ref={(el) => (TaskList.current[index] = el)}
 									onMouseLeave={() => {
-										setTaskHover(-1)
+										setTaskHover(-1);
 									}}
 									onClick={() => {
 										setTaskOptionHeight(
@@ -218,7 +239,9 @@ export const TaskComponent = () => {
 											}}
 											className="absolute top-0 right-0 flex flex-col items-center justify-around text-background bg-white w-10">
 											<i className="fas fa-pen p-1 hover:text-orange-400"></i>
-											<i className="fas fa-trash p-1 hover:text-blue-500"></i>
+											<i
+												onClick={() => DeleteTask(item,index)}
+												className="fas fa-trash p-1 hover:text-blue-500"></i>
 										</div>
 									)}
 								</div>
