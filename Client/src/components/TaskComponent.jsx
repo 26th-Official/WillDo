@@ -1,16 +1,26 @@
+// Importing the required modules
+
 import React, { useEffect, useRef, useState } from "react";
+// for realtime data fetching from backend
 import io from 'socket.io-client';
 
-
+// =============================================
 
 export const TaskComponent = () => {
+	// to store the tasks from db
 	const [Tasks, setTasks] = useState([]);
+	// to check is the tasks are fetched for first time or else display the loading animation
 	const [Fetched, setFetched] = useState(false);
+	// its for displaying the div for typing new tasks
 	const [AddTask, setAddTask] = useState(false);
+	// when the db update signal received from backend it triggers the useeffect to fetch the data from db
 	const [Refetch, setRefetch] = useState(true)
 	
+	// for the text in the new task div
 	const AddTaskRef = useRef("")
 
+
+	// for fetching the data from db for first time and as well as when updated
 	useEffect(() => {
 		if (Refetch){
 			fetch("http://localhost:6565/getall")
@@ -23,6 +33,8 @@ export const TaskComponent = () => {
 		}
 	}, [Refetch]);
 
+
+	// for receiving signal from backend if there is a db update and control the refetch state
 	useEffect(() => {
 		const socketio = io("http://localhost:6565/")
 
@@ -38,6 +50,9 @@ export const TaskComponent = () => {
 
 
 
+	// This is for submitting the task after typing the in the Add task div
+	// when clicked it first adds the task locally and then when task update signal received from the
+	// backend the whole data is refetched so as to not have any latency issues
 	function SubmitTask() {
 		const Heading = AddTaskRef.current.value
 		if(Heading === "") {
@@ -55,6 +70,7 @@ export const TaskComponent = () => {
 				})
 			}).then(res => res.json()).then(res => (console.log(res)))
 			setAddTask(false)
+			//  Adding the new task locally
 			setTasks([...Tasks,{
 				"Heading" : Heading,
 			}])
@@ -63,11 +79,14 @@ export const TaskComponent = () => {
 
 	return (
 		<div className="relative">
+			{/*  Nav bar of the website */}
 			<div className="fixed w-full top-0 right-0 left px-2 z-[100] py-5 bg-background/50 backdrop-blur-sm ">
 				<div className="flex justify-center items-center">
 					<p className="font-Shadows_Into_Light text-6xl max-sm:text-5xl">
 						Task I Will Do 
 					</p>
+
+					{/* THis the task add button when controls the "AddTask" state */}
 					<i
 						onClick={() => setAddTask(true)} 
 						className="fa fa-plus-circle text-2xl mx-6 mt-1 text-white/50
@@ -76,7 +95,9 @@ export const TaskComponent = () => {
 				</div>
 			</div>
 
+			{/* THis is where the fetched tasks are displayed */}
 			<div className="absolute top-[50px] w-full">
+				{/* this is New task adding part located */}
 				{AddTask && (
 					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
 						<textarea onInput={() => {
@@ -92,8 +113,13 @@ export const TaskComponent = () => {
 					</div>
 				)}
 
+				{/* In here it first checks if the "Tasks" state has any content, */}
+				{/* if it has it will displays it */}
 				{Object.keys(Tasks).length === 0 ? (
 					<div>
+						{/* If the "Tasks" state is empty, it checks if the "Fetched state is false or true" */}
+						{/* If it false it shows the loading animation else it assumes that there is no */}
+						{/* task in the database */}
 						{Fetched ? (
 							<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
 								<div><b>Nothing Here !!</b></div>
@@ -106,6 +132,7 @@ export const TaskComponent = () => {
 						)}
 					</div>
 				) : (
+					// This accesses the contents in the fetched json data
 					Tasks.map((item, index) => (
 						<div id="TaskContainer" key={index} className="relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
 							<div>
