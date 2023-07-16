@@ -7,10 +7,12 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 
 # =====================================
+# For accessing the Mongo DB
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 # for multithreading purpose
+from multiprocessing import Process
 from threading import Thread
 
 # =====================================
@@ -59,6 +61,24 @@ def DeleteData():
     collection.delete_one(data)
     return jsonify({"status": "success"})
 
+
+# This is to update data in DB
+@app.route("/update", methods=["POST"])
+def UpdateData():
+    data = request.get_json()
+    OriginalItem = data["OriginalItem"]
+    ModifiedItem = data["ModifiedItem"]
+
+    OriginalItem.pop("_id")
+    ModifiedItem.pop("_id")
+    
+    ModifiedItem = {"$set" : ModifiedItem}
+    print(OriginalItem,ModifiedItem)
+    
+    collection.update_many(OriginalItem,ModifiedItem)
+    return jsonify({"status": "success"})
+
+
 # This is to get all the data from DB
 @app.route("/getall")
 def GetAll():
@@ -70,10 +90,12 @@ def GetAll():
     return jsonify(temp)
 
 
+
 if __name__ == '__main__':
     # we are starting the DB_Update function in a thread to avoid blocking of the main thread
     Task1 = Thread(target=DB_Update)
     Task1.start()
+    
     # Now we are starting the server
-    socketio.run(app,port=6565)
+    socketio.run(app,port=6565,debug=False)
 
