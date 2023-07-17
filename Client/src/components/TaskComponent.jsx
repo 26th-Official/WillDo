@@ -13,9 +13,11 @@ export const TaskComponent = () => {
 	const [Fetched, setFetched] = useState(false);
 	// its for displaying the div for typing new tasks
 	const [AddTask, setAddTask] = useState(false);
+	// its for displaying the div for editting tasks
+	const [EditTask, setEditTask] = useState(false);
 	// when the db update signal received from backend it triggers the useeffect to fetch the data from db
 	const [Refetch, setRefetch] = useState(true);
-	
+
 	// =======================================================
 	// We are using separate hover states for Pinned and Unpinned Tasks (Check if the task is hovered or not) so as to not confict with Pinned and Unpinned Tasks
 	// Since we are using Index as the key, we can't use the same hover state for both
@@ -28,6 +30,9 @@ export const TaskComponent = () => {
 
 	// This is for the error page it will be "true" if there is any problem in data fetching from backend
 	const [ErrorPage, setErrorPage] = useState(false);
+
+	// This is to store the contents of the task that is being edited (It stores the whole json of that particular task)
+	const [EditTaskValue, setEditTaskValue] = useState()
 
 	// **********************************************************************************************
 
@@ -51,7 +56,7 @@ export const TaskComponent = () => {
 				.catch(() => setErrorPage(true));
 		}
 	}, [Refetch]);
-	
+
 
 	// for receiving signal from backend if there is a db update and control the refetch state
 	useEffect(() => {
@@ -106,7 +111,6 @@ export const TaskComponent = () => {
 
 	// This is to delete the task from the DB
 	function DeleteTask(data) {
-		console.log(data);
 		fetch("http://localhost:6565/delete", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -126,7 +130,6 @@ export const TaskComponent = () => {
 	// This is to update the task in the DB
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
 	function UpdateTask(ModifiedItem, OriginalItem, index) {
-		console.log(ModifiedItem);
 		fetch("http://localhost:6565/update", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -141,11 +144,9 @@ export const TaskComponent = () => {
 		// After updating, inorder for fast update we are updating the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
 		const TasksCopy = [...Tasks]; // We are copying the Tasks state as don't want to share the same memory location
-		const UpdatedDict = { ...TasksCopy[index] }; //Now we are just picking the item that we want to update
-		UpdatedDict.keys = ModifiedItem.keys; // Now we are changing the value of the original with modified one
-
-		TasksCopy[index] = UpdatedDict; // Finally we are updating the TasksCopy with the updated item
+		TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
 		setTasks(TasksCopy); // Now we are updating the Tasks state with the updated TasksCopy
+
 	}
 
 	// **********************************************************************************************
@@ -171,11 +172,14 @@ export const TaskComponent = () => {
 				</div>
 			</div>
 
-			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Adding Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+
 
 			{/* THis is where the fetched tasks are displayed */}
 			<div className="absolute top-[50px] w-full">
 				{/* this is New task adding part located */}
+
+				{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Adding Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+
 				{AddTask && (
 					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
 						<textarea
@@ -205,6 +209,68 @@ export const TaskComponent = () => {
 							<div
 								// THis is to cancel the task adding process
 								onClick={() => setAddTask(false)}
+								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
+								Cancel{" "}
+								<i
+									className="fas fa-xmark pl-1"
+									aria-hidden="true"></i>{" "}
+							</div>
+						</div>
+					</div>
+				)}
+
+				{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Editing Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+
+				{EditTask && (
+					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
+						<textarea
+							onInput={() => {
+								AddTaskRef.current.style.outline =
+									"0.7px solid rgb(255,255,255)";
+								AddTaskRef.current.style.height = "auto";
+								AddTaskRef.current.style.height =
+									AddTaskRef.current.scrollHeight + "px";
+							}}
+							required
+							id="TaskTestBox"
+							placeholder="Please Enter a Task"
+							ref={AddTaskRef}
+							value={(EditTaskValue.ModifiedItem).Heading} // This is to set the value of the textbox to the value that needs to be edited
+							// Now we are using the onChange event to update the value of the textbox as its not possible to edit the value of the textbox,
+							// since we have used the "value" attribute to set the value of the textbox
+							onChange={(text) => {
+								let TextboxText = text.target.value // This is to get the value of the textbox
+								const ModifiedItem = { ...(EditTaskValue.ModifiedItem) } // This is to copy the ModifiedItem object from the EditTaskValue state
+								ModifiedItem.Heading = TextboxText // Now we are updating the ModifiedItem's Heading with the new value which is from the textbox
+
+								// After updating the ModifiedItem's Heading we are updating the EditTaskValue state with the new ModifiedItem
+								setEditTaskValue({
+									OriginalItem: EditTaskValue.OriginalItem,
+									ModifiedItem: ModifiedItem,
+									Index: EditTaskValue.Index
+								})
+
+							}}
+							rows={1}
+							className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
+						<br />
+						<div className="flex mx-auto">
+							<div
+								onClick={() => {
+									// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
+									UpdateTask(EditTaskValue.ModifiedItem, EditTaskValue.OriginalItem, EditTaskValue.Index)
+									// After updating the task we are setting the EditTask state to false to close the editing page
+									setEditTask(false)
+								}}
+								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500">
+								Confirm{" "}
+								<i
+									className="fas fa-chevron-right pl-1"
+									aria-hidden="true"></i>{" "}
+							</div>
+							<div
+								// THis is to cancel the task editting process
+								onClick={() => setEditTask(false)}
 								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 								Cancel{" "}
 								<i
@@ -268,70 +334,79 @@ export const TaskComponent = () => {
 							// This accesses the contents in the fetched json data
 							// This part is separated as Pinned and Unpinned Tasks
 							<div>
-								<div className="p-5"/>  {/* This is to add some space between the nav bar and the tasks */}
+								<div className="p-5" />  {/* This is to add some space between the nav bar and the tasks */}
 								{/* ++++++++++++++++++++++++++++++++++++++++ Pinned Tasks ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 								<div>
 									{(Tasks.filter(item => item.Pinned === true)).length !== 0 && (<p className="p-2 text-base underline underline-offset-4 text-left">Pinned Tasks</p>)}
 									{/* Now at first we are displaying the the Pinned items that has "Pinned" = True */}
 									{Tasks.filter(
-											(item) => item.Pinned === true
-										).map((item, index) => (
-											<div
-												key={index}
-												ref={(el) =>
-													(TaskList.current[index] = el)
-												}
-												// We are using separate hover states for Pinned and Unpinned Tasks so as to not confict with Pinned and Unpinned Tasks
-												// Since we are using Index as the key, we can't use the same hover state for both
-												onMouseLeave={() => {
-													setPinnedTaskHover(-1);
-												}}
-												// This is to set the height of the TaskOption div as its a "absolute" positioned div
-												onClick={() => {
-													setTaskOptionHeight(
-														TaskList.current[index].clientHeight
-													);
-													setPinnedTaskHover(index);
-												}}
-												className="relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
-												<div>
-													<p>{item.Heading}</p>
-												</div>
-												{PinnedTaskHover === index && (
-													<div
-														style={{
-															height: TaskOptionHeight + "px",
-														}}
-														className="absolute top-0 right-0 flex flex-col items-center justify-around text-background bg-white w-10">
-														<i className="fas fa-pen p-1 hover:text-orange-400"></i>
-														<i
-															onClick={() => {
-																// Now inorder to update the item in MongoDb, We are sending the Original value
-																// and the modified value which sets the "Pinned" to "True"
-																const OriginalItem =
-																	{ ...item }; // we are using spread operator to copy the content of one dict to another dict
-																if (item.Pinned === true) {
-																	item.Pinned = false;
-																} else {
-																	item.Pinned = true;
-																}
-																UpdateTask(item,OriginalItem,index);
-															}}
-															className={`fas fa-thumbtack p-1 pb-0.5 hover:text-blue-500 ${item.Pinned ===
-																	false
-																	? "rotate-45"
-																	: "rotate-0 text-blue-500"
-																}`}
-															aria-hidden="true"></i>
-														<i
-															onClick={() =>
-																DeleteTask(item)
-															}
-															className="fas fa-trash p-1 hover:text-red-500"></i>
-													</div>
-												)}
+										(item) => item.Pinned === true
+									).map((item, index) => (
+										<div
+											key={index}
+											ref={(el) =>
+												(TaskList.current[index] = el)
+											}
+											// We are using separate hover states for Pinned and Unpinned Tasks so as to not confict with Pinned and Unpinned Tasks
+											// Since we are using Index as the key, we can't use the same hover state for both
+											onMouseLeave={() => {
+												setPinnedTaskHover(-1);
+											}}
+											// This is to set the height of the TaskOption div as its a "absolute" positioned div
+											onClick={() => {
+												setTaskOptionHeight(
+													TaskList.current[index].clientHeight
+												);
+												setPinnedTaskHover(index);
+											}}
+											className="relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
+											<div>
+												<p>{item.Heading}</p>
 											</div>
-										))}
+											{PinnedTaskHover === index && (
+												<div
+													style={{
+														height: TaskOptionHeight + "px",
+													}}
+													className="absolute top-0 right-0 flex flex-col items-center justify-around text-background bg-white w-10">
+													<i onClick={() => {
+														// This is to set the EditTask state to true to open the editting page
+														setEditTask(true)
+														// The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
+														setEditTaskValue({
+															OriginalItem: item,
+															ModifiedItem: { ...item },
+															Index: index
+														})
+													}} className="fas fa-pen p-1 hover:text-orange-400"></i>
+													<i
+														onClick={() => {
+															// Now inorder to update the item in MongoDb, We are sending the Original value
+															// and the modified value which sets the "Pinned" to "True"
+															const OriginalItem =
+																{ ...item }; // we are using spread operator to copy the content of one dict to another dict
+															if (item.Pinned === true) {
+																item.Pinned = false;
+															} else {
+																item.Pinned = true;
+															}
+															UpdateTask(item, OriginalItem, index);
+														}}
+														className={`fas fa-thumbtack p-1 pb-0.5 hover:text-blue-500 ${item.Pinned ===
+															false
+															? "rotate-45"
+															: "rotate-0 text-blue-500"
+															}`}
+														aria-hidden="true"></i>
+													<i
+														onClick={() =>
+															DeleteTask(item)
+														}
+														className="fas fa-trash p-1 hover:text-red-500"></i>
+												</div>
+											)}
+										</div>
+									))}
 								</div>
 
 								{/* +++++++++++++++++++++++++++++++++++++++++++++ Un-Pinned Tasks+++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
@@ -367,7 +442,16 @@ export const TaskComponent = () => {
 														height: TaskOptionHeight + "px",
 													}}
 													className="absolute top-0 right-0 flex flex-col items-center justify-around text-background bg-white w-10">
-													<i className="fas fa-pen p-1 hover:text-orange-400"></i>
+													<i onClick={() => {
+														// This is to set the EditTask state to true to open the editting page
+														setEditTask(true)
+														// The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
+														setEditTaskValue({
+															OriginalItem: item,
+															ModifiedItem: { ...item },
+															Index: index
+														})
+													}} className="fas fa-pen p-1 hover:text-orange-400"></i>
 													<i
 														onClick={() => {
 															// Now inorder to update the item in MongoDb, We are sending the Original value
@@ -378,12 +462,12 @@ export const TaskComponent = () => {
 															} else {
 																item.Pinned = true;
 															}
-															UpdateTask(item,OriginalItem,index);
+															UpdateTask(item, OriginalItem, index);
 														}}
 														className={`fas fa-thumbtack p-1 pb-0.5 hover:text-blue-500 ${item.Pinned ===
-																false
-																? "rotate-45"
-																: "rotate-0 text-blue-500"
+															false
+															? "rotate-45"
+															: "rotate-0 text-blue-500"
 															}`}
 														aria-hidden="true"></i>
 													<i

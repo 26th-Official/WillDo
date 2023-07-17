@@ -12,7 +12,6 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 # for multithreading purpose
-from multiprocessing import Process
 from threading import Thread
 
 # =====================================
@@ -28,7 +27,7 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app,cors_allowed_origins="*")
 
-# THis is for the checking the logs in DB for the purpose of sending signal to frontend
+# This is for the checking the logs in DB for the purpose of sending signal to frontend
 DB_CheckPipeline = [{"$match" : {
     "operationType" : {
         "$in" : ["insert","update","replace","delete"]
@@ -50,15 +49,18 @@ def PostData():
     data = request.get_json()
     print(data)
     PostResult = collection.insert_one(data)
+    socketio.emit("DB_Update")
     return jsonify({"status": "success", "id": str(PostResult.inserted_id)})
 
 
+# This is to delete data from DB
 @app.route("/delete", methods=["POST"])
 def DeleteData():
     data = request.get_json()
     data.pop('_id')
     print(data)
     collection.delete_one(data)
+    socketio.emit("DB_Update")
     return jsonify({"status": "success"})
 
 
@@ -76,6 +78,7 @@ def UpdateData():
     print(OriginalItem,ModifiedItem)
     
     collection.update_many(OriginalItem,ModifiedItem)
+    socketio.emit("DB_Update")
     return jsonify({"status": "success"})
 
 
