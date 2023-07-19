@@ -27,12 +27,19 @@ export const TaskComponent = () => {
 
 	// It stores the height of the task option div that is being hovered
 	const [TaskOptionHeight, setTaskOptionHeight] = useState(0);
-
 	// This is for the error page it will be "true" if there is any problem in data fetching from backend
 	const [ErrorPage, setErrorPage] = useState(false);
-
 	// This is to store the contents of the task that is being edited (It stores the whole json of that particular task)
 	const [EditTaskValue, setEditTaskValue] = useState()
+
+	// It stores the single task that was deleted recently
+	const [DeletedTasks, setDeletedTasks] = useState([])
+	// It indicates whether the delete modal is visible or not
+	const [DeleteModelStatus, setDeleteModelStatus] = useState(false)
+
+	// It stores the interval for the delete modal, We are storing it because we want to clear the interval when the undo action is performed
+	// if we don't clear the Interval it will automatically the Delete Modal with the remaining time the next time we delete a task
+	const [DeleteModalInterval, setDeleteModalInterval] = useState()
 
 	// **********************************************************************************************
 
@@ -71,6 +78,23 @@ export const TaskComponent = () => {
 			socketio.disconnect();
 		};
 	});
+
+	// This is to control the delete modal visibility
+	useEffect(() => {
+		// if the "DeleteModelStatus" is true we set the Interval for 10 seconds and then set the "DeleteModelStatus" to false
+		if (DeleteModelStatus){
+			const Interval = setInterval(() => {
+				setDeleteModelStatus(false)
+			},10000)
+			// We are storing the interval so that we can clear it when the undo action is performed
+			setDeleteModalInterval(Interval)
+		}
+
+		return () => {
+			// This is to clear the interval when the undo action is performed
+			clearInterval(DeleteModalInterval)
+		}
+	},[DeleteModelStatus])
 
 	// **********************************************************************************************
 
@@ -123,7 +147,28 @@ export const TaskComponent = () => {
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
 		const NewTaskList = Tasks.filter((item) => item !== data);
 		setTasks(NewTaskList);
+		setDeletedTasks([data]);
+		setDeleteModelStatus(true)
 	}
+
+
+	function UndoTask(){
+		fetch("http://localhost:6565/post", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					Heading: DeletedTasks[0].Heading,
+					Pinned: DeletedTasks[0].Pinned,
+				}),
+			})
+				.then((res) => res.json())
+				.then((res) => console.log(res, "Inserted"));
+
+		setTasks([...Tasks,DeletedTasks[0]])
+		setDeleteModelStatus(false)
+		clearInterval(DeleteModalInterval)
+	}
+
 
 	// **********************************************************************************************
 
@@ -172,7 +217,19 @@ export const TaskComponent = () => {
 				</div>
 			</div>
 
+			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Delete Modal +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+			
+			{DeleteModelStatus && (
+				<div className="fixed w-full h-[60px] bottom-1 p-2 right-0 cursor-pointer">
+					<div className="bg-primary w-full border border-red-500 h-[50px] p-5 rounded-md flex items-center justify-between ">
+						<p className="text-lg">Task Deleted</p>
+						<div onClick={UndoTask} className="flex items-center text-base hover:animate-pulse hover:text-green-400"> <i className="fas fa-arrow-rotate-left px-1" aria-hidden="true"></i> Undo</div>
+					</div>
+				</div>
+			)}
 
+
+			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task's Area +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
 			{/* THis is where the fetched tasks are displayed */}
 			<div className="absolute top-[50px] w-full">
@@ -209,6 +266,12 @@ export const TaskComponent = () => {
 							<div
 								// THis is to cancel the task adding process
 								onClick={() => setAddTask(false)}
+								onKeyUp={(e) => {
+									if (e.key === "Escape"){
+										console.warn("Escape Pressed")
+										setAddTask(false)
+									}
+								}}
 								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 								Cancel{" "}
 								<i
