@@ -40,6 +40,8 @@ export const TaskComponent = () => {
 	// It stores the interval for the delete modal, We are storing it because we want to clear the interval when the undo action is performed
 	// if we don't clear the Interval it will automatically the Delete Modal with the remaining time the next time we delete a task
 	const [DeleteModalInterval, setDeleteModalInterval] = useState()
+	// It indicates whether the menu bar is visible or not
+	const [MenuBarStatus, setMenuBarStatus] = useState(true) 
 
 	// **********************************************************************************************
 
@@ -202,7 +204,13 @@ export const TaskComponent = () => {
 
 			<div className="fixed w-full top-0 right-0 left px-2 z-[100] py-5 bg-background/50 backdrop-blur-sm ">
 				<div className="flex justify-center items-center">
-					<p className="font-Shadows_Into_Light text-6xl max-sm:text-5xl">
+					{/* This is the Menu Button and it controls the "MenuBarStatus" */}
+					<i onClick={() => {
+						setMenuBarStatus(true)
+					}} class="fa fa-bars absolute left-0 p-0.5 text-2xl mx-6 mt-1 text-white/50
+					hover:text-white/100 mr-auto" aria-hidden="true"></i>
+
+					<p className="font-Shadows_Into_Light text-6xl max-sm:text-5xl max-sm:pl-9">
 						Task I Will Do
 					</p>
 
@@ -211,10 +219,40 @@ export const TaskComponent = () => {
 						onClick={() => {
 							setAddTask(true);
 						}}
-						className="fa fa-plus-circle text-2xl mx-6 mt-1 text-white/50
-					hover:text-white/100"
+						className="fa fa-plus-circle absolute right-0 p-2 text-2xl mx-6 mt-1 text-white/50
+					hover:text-white/100 max-sm:hidden"
 						aria-hidden="true"></i>
 				</div>
+			</div>
+
+			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Menu Bar +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+
+			{MenuBarStatus && (
+				<div>
+					<div onClick={() => {
+						setMenuBarStatus(false)
+					}} className="fixed w-[100vw] h-[100vh] left-0 top-0 z-[100] bg-primary/50 backdrop-blur-sm"></div>
+					<div className="fixed left-0 top-0 h-[100vh] w-[40%] max-sm:w-[80%] p-5 z-[110] border-r-2 bg-primary flex flex-col">
+						<div className="w-full">
+							<i onClick={() => {
+								setMenuBarStatus(false)
+							}} class="fas fa-arrow-right-to-bracket rotate-180 text-2xl text-white/50
+					hover:text-white/100 float-right m-2" aria-hidden="true"></i>
+						</div>
+						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Archive</p>
+						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Trash</p>
+						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Settings</p>
+						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-red-500 mt-auto">Sign out</p>
+					</div>
+				</div>
+			)}
+
+			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Add Button +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+
+			<div className="fixed bottom-6 right-6 z-50 sm:hidden">
+				<i onClick={() => {
+						setAddTask(true);
+				}} class="fa fa-plus-circle text-4xl" aria-hidden="true"></i>
 			</div>
 
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Delete Modal +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
