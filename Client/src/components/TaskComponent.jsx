@@ -1,56 +1,81 @@
-// Importing the required modules
-
 import React, { useEffect, useRef, useState } from "react";
+
 // for realtime data fetching from backend
 import io from "socket.io-client";
+
+import isEqual from "lodash/isEqual"
+
+// Custom Components
+import { DeleteTaskModal, ErrorPageComponent, TaskOptions } from './AdditionalComponents';
+import { MenubarComponent } from './MenubarComponent';
+import { NavbarComponent } from "./NavbarComponent";
 
 // **********************************************************************************************
 
 export const TaskComponent = () => {
+	// =======================================================
 	// to store the tasks from db
 	const [Tasks, setTasks] = useState([]);
-	// to check is the tasks are fetched for first time or else display the loading animation
-	const [Fetched, setFetched] = useState(false);
+	const [PinnedTasks, setPinnedTasks] = useState([]);
+	const [UnPinnedTasks, setUnPinnedTasks] = useState([]);
+
 	// its for displaying the div for typing new tasks
 	const [AddTask, setAddTask] = useState(false);
-	// its for displaying the div for editting tasks
-	const [EditTask, setEditTask] = useState(false);
+	// =======================================================
+	
+	// =======================================================
+	// to check is the tasks are fetched for first time or else display the loading animation
+	const [Fetched, setFetched] = useState(false);
 	// when the db update signal received from backend it triggers the useeffect to fetch the data from db
 	const [Refetch, setRefetch] = useState(true);
-
-	// =======================================================
-	// We are using separate hover states for Pinned and Unpinned Tasks (Check if the task is hovered or not) so as to not confict with Pinned and Unpinned Tasks
-	// Since we are using Index as the key, we can't use the same hover state for both
-	const [PinnedTaskHover, setPinnedTaskHover] = useState(-1); // for Hover state for Pinned Task  -1 means no task is hovered
-	const [NonPinnedTaskHover, setNonPinnedTaskHover] = useState(-1); // for Hover state for UnPinned Task  -1 means no task is hovered
 	// =======================================================
 
-	// It stores the height of the task option div that is being hovered
-	const [TaskOptionHeight, setTaskOptionHeight] = useState(0);
-	// This is for the error page it will be "true" if there is any problem in data fetching from backend
-	const [ErrorPage, setErrorPage] = useState(false);
+	// =======================================================
+	// its for displaying the div for typing new checkbox type tasks (Its the button in the add task page to add checkbox type tasks)
+	const [AddCheckBoxTask, setAddCheckBoxTask] = useState(false);
+	// This stores the Items inside the "Checklist" type tasks
+	const [CheckListItems, setCheckListItems] = useState([{Heading: "",Checked: false}]);
+	// =======================================================
+
+	// =======================================================
+	// its for displaying the div for editting tasks
+	const [EditTask, setEditTask] = useState(false);
 	// This is to store the contents of the task that is being edited (It stores the whole json of that particular task)
 	const [EditTaskValue, setEditTaskValue] = useState()
+	// =======================================================
 
-	// It stores the single task that was deleted recently
+	// =======================================================
+	// It stores the single task that was deleted recently for the purpose of undo
 	const [DeletedTasks, setDeletedTasks] = useState([])
 	// It indicates whether the delete modal is visible or not
 	const [DeleteModelStatus, setDeleteModelStatus] = useState(false)
-
 	// It stores the interval for the delete modal, We are storing it because we want to clear the interval when the undo action is performed
 	// if we don't clear the Interval it will automatically the Delete Modal with the remaining time the next time we delete a task
 	const [DeleteModalInterval, setDeleteModalInterval] = useState()
+	// =======================================================
+
+	// =======================================================
 	// It indicates whether the menu bar is visible or not
-	const [MenuBarStatus, setMenuBarStatus] = useState(true) 
+	const [MenuBarStatus, setMenuBarStatus] = useState(false) 
+	// This is for the error page it will be "true" if there is any problem in data fetching from backend
+	const [ErrorStatus, setErrorStatus] = useState(false)
+	// =======================================================
 
 	// **********************************************************************************************
 
 	// for the text in the new task div
 	const AddTaskRef = useRef("");
-	// It contains the all the div of tasks
-	const TaskList = useRef([]);
+
+	// It contains all the items for the checklist type tasks mainly used inorder to highlight the 
+	// the textbox which are empty
+	const CheckListTaskRef = useRef([])
+
+	const PinnedTaskRef = useRef([])
+	const UnPinnedTaskRef = useRef([])
 
 	// **********************************************************************************************
+
+	// =======================================================
 
 	// for fetching the data from db for first time and as well as when updated
 	useEffect(() => {
@@ -58,14 +83,18 @@ export const TaskComponent = () => {
 			fetch("http://localhost:6565/getall")
 				.then((res) => res.json())
 				.then((res) => {
-					setTasks(res);
+					// This is to check if the data is changed or not so as to not cause latency issues
+					if(!isEqual(Tasks,res)){
+						setTasks(res)
+					}
 					setFetched(true);
 					setRefetch(false);
 				})
-				.catch(() => setErrorPage(true));
+				.catch(() => setErrorStatus(true));
 		}
 	}, [Refetch]);
 
+	// =======================================================
 
 	// for receiving signal from backend if there is a db update and control the refetch state
 	useEffect(() => {
@@ -80,6 +109,8 @@ export const TaskComponent = () => {
 			socketio.disconnect();
 		};
 	});
+
+	// =======================================================
 
 	// This is to control the delete modal visibility
 	useEffect(() => {
@@ -98,38 +129,122 @@ export const TaskComponent = () => {
 		}
 	},[DeleteModelStatus])
 
+	// =======================================================
+
+	// This is to turn the Checklist type task to normal text task when all the items in the
+	// checklist are removed
+	useEffect(() => {
+		// 👇 Check if "CheckListItems" is empty
+		if (CheckListItems.length === 0){
+			setAddCheckBoxTask(false) // Switching this to false which will turn the checklist type task to normal text task in the UI
+			setCheckListItems([[{Heading: "",Checked: false}]]) // for displaying a new textbox for the next time after removing all the items in the checklist
+		}
+	},[CheckListItems])
+
+	// =======================================================
+
+	useEffect(() => {
+		// const newPinnedTasks = Tasks.filter((task) => task.Pinned === true)
+		// const newUnPinnedTasks = Tasks.filter((task) => task.Pinned === false)
+
+		// if (!isEqual(PinnedTasks,newPinnedTasks)){
+		// 	setPinnedTasks(newPinnedTasks)
+		// }
+		
+		// else if (!isEqual(UnPinnedTasks,newUnPinnedTasks)){
+		// 	setUnPinnedTasks(newUnPinnedTasks)
+		// }
+
+		setPinnedTasks([]),
+		setPinnedTasks(Tasks.filter((task) => task.Pinned === true))
+		setUnPinnedTasks([])
+		setUnPinnedTasks(Tasks.filter((task) => task.Pinned === false))
+		console.log([PinnedTaskRef,UnPinnedTaskRef])
+	},[Tasks])
+
 	// **********************************************************************************************
 
 	// This is for submitting the task after typing the in the Add task div
 	// when clicked it first adds the task locally and then when task update signal received from the
 	// backend the whole data is refetched so as to not have any latency issues
 	function SubmitTask() {
-		const Heading = AddTaskRef.current.value;
-		if (Heading === "") {
-			AddTaskRef.current.focus();
-			AddTaskRef.current.style.outline = "0.7px solid rgb(239,68,68)";
-		} else {
-			AddTaskRef.current.style.outline = "none";
-			console.log(Heading);
-			fetch("http://localhost:6565/post", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					Heading: Heading,
-					Pinned: false,
-				}),
-			})
-				.then((res) => res.json())
-				.then((res) => console.log(res, "Inserted"));
-			setAddTask(false);
+
+		// This will handle the checklist type tasks
+		// "AddCheckBoxTask" is true when the user clicks the "Add Checklist" button in the add task div else its a normal text task
+		if (AddCheckBoxTask === false){
+			const Heading = AddTaskRef.current.value;
+			if (Heading === "") {
+				AddTaskRef.current.focus();
+				AddTaskRef.current.style.outline = "0.7px solid rgb(239,68,68)";
+			} else {
+				AddTaskRef.current.style.outline = "none";
+				console.log(Heading);
+				fetch("http://localhost:6565/post", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						Heading: Heading,
+						Pinned: false,
+					}),
+				})
+					.then((res) => res.json())
+					.then((res) => console.log(res, "Inserted"));
+				setAddTask(false);
+				//  Adding the new task locally
+				setTasks([
+					...Tasks,
+					{
+						Heading: Heading,
+						Pinned: false,
+					},
+				]);
+			}
+		} 
+		// This will handle the checklist type tasks
+		else {
+			let CheckListCount = 0 // This will count the number of checklist items that are not empty
+			let UpdatedCheckListItems = [...CheckListItems] // This will make a deep copy of the checklist items array
+			for (let i=0;i<CheckListItems.length;i++){
+				//  👇 This denotes the textbox inside the "CheckListTaskRef" as it has 3 childrens
+				if (CheckListTaskRef.current[i].children[1].value === ""){
+					CheckListTaskRef.current[i].children[1].focus()
+					CheckListTaskRef.current[i].children[1].style.outline = "0.7px solid rgb(239,68,68)"; // This will highlight the textbox which is empty
+				} else {
+					CheckListCount += 1 // If the textbox is not empty we increment the count
+					CheckListTaskRef.current[i].children[1].style.outline = "none" // we remove the outline if the textbox is not empty
+					// 👇 we add the Checkbox data from the 2nd child of the "CheckListTaskRef" which is the "input checkbox"
+					UpdatedCheckListItems[i].Checked = CheckListTaskRef.current[i].children[0].checked 
+				}
+			}
+			
+			// If all the checklist items are not empty then we add the task to the db and locally
+			if (CheckListCount === CheckListItems.length){
+				fetch("http://localhost:6565/post", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						Contents: CheckListItems,
+						Pinned: false,
+						Type: "CheckList"
+					}),
+				})
+					.then((res) => res.json())
+					.then((res) => console.log(res, "Inserted"));
+				setAddTask(false);
+				setCheckListItems([{Heading: "",Checked: false}])
+				setAddCheckBoxTask(false)
 			//  Adding the new task locally
+			
 			setTasks([
 				...Tasks,
-				{
-					Heading: Heading,
+				{	
+					Contents: CheckListItems, // We are adding the checklist items to the "Contents" key
 					Pinned: false,
+					Type: "CheckList"
 				},
 			]);
+			}
+
 		}
 	}
 
@@ -153,7 +268,7 @@ export const TaskComponent = () => {
 		setDeleteModelStatus(true)
 	}
 
-
+	// This is to undo the last delete action
 	function UndoTask(){
 		fetch("http://localhost:6565/post", {
 				method: "POST",
@@ -166,17 +281,16 @@ export const TaskComponent = () => {
 				.then((res) => res.json())
 				.then((res) => console.log(res, "Inserted"));
 
-		setTasks([...Tasks,DeletedTasks[0]])
+		setTasks((prev) => [...prev,DeletedTasks[0]])
 		setDeleteModelStatus(false)
-		clearInterval(DeleteModalInterval)
+		clearInterval(DeleteModalInterval) // When undo action is performed the timer is cleared so as to not interfere the next delete action
 	}
-
 
 	// **********************************************************************************************
 
 	// This is to update the task in the DB
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
-	function UpdateTask(ModifiedItem, OriginalItem, index) {
+	function UpdateTask(ModifiedItem, OriginalItem, index, Type="TextTask") {
 		fetch("http://localhost:6565/update", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -190,9 +304,24 @@ export const TaskComponent = () => {
 
 		// After updating, inorder for fast update we are updating the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
-		const TasksCopy = [...Tasks]; // We are copying the Tasks state as don't want to share the same memory location
-		TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
-		setTasks(TasksCopy); // Now we are updating the Tasks state with the updated TasksCopy
+		// 👇 This will handle the text type tasks
+		if (Type === "TextTask"){
+			console.warn("Its a TextTask")
+			const TasksCopy = JSON.parse(JSON.stringify(Tasks)); // We are making a deep copy of the Tasks state as don't want to share the same memory location
+			TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
+			setTasks(() => TasksCopy); // Now we are updating the Tasks state with the updated TasksCopy
+		} 
+		// 👇 This will handle the check tasks
+		else if (Type === "CheckList"){
+			console.warn("Its a checklist")
+
+			// we are spliting the tasks into 2 parts, one is the normal text type tasks and the other is the checklist type tasks
+			// because the index parameter in the "UpdateTask" function is the index of the checklist type tasks in the "Tasks" state not the combined index
+			const TasksCopy_TextTasks = JSON.parse(JSON.stringify(Tasks.filter((task) => task.Type != "CheckList"))); // This is the normal text type tasks
+			const TasksCopy_Checklist = JSON.parse(JSON.stringify(Tasks.filter((task) => task.Type == "CheckList"))); // This is the checklist type tasks
+			TasksCopy_Checklist[index] = ModifiedItem // We are updating the particular checklist type task which needs to be updated according to the "index" parameter with the modified item
+			setTasks(() => [...TasksCopy_TextTasks,...TasksCopy_Checklist])
+		}
 
 	}
 
@@ -202,70 +331,27 @@ export const TaskComponent = () => {
 		<div className="relative">
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Nav Bar +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
-			<div className="fixed w-full top-0 right-0 left px-2 z-[100] py-5 bg-background/50 backdrop-blur-sm ">
-				<div className="flex justify-center items-center">
-					{/* This is the Menu Button and it controls the "MenuBarStatus" */}
-					<i onClick={() => {
-						setMenuBarStatus(true)
-					}} class="fa fa-bars absolute left-0 p-0.5 text-2xl mx-6 mt-1 text-white/50
-					hover:text-white/100 mr-auto" aria-hidden="true"></i>
-
-					<p className="font-Shadows_Into_Light text-6xl max-sm:text-5xl max-sm:pl-9">
-						Task I Will Do
-					</p>
-
-					{/* THis the task add button when controls the "AddTask" state */}
-					<i
-						onClick={() => {
-							setAddTask(true);
-						}}
-						className="fa fa-plus-circle absolute right-0 p-2 text-2xl mx-6 mt-1 text-white/50
-					hover:text-white/100 max-sm:hidden"
-						aria-hidden="true"></i>
-				</div>
-			</div>
+			<NavbarComponent setMenuBarStatus={setMenuBarStatus} setAddTask={setAddTask}  />
 
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Menu Bar +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
 			{MenuBarStatus && (
-				<div>
-					<div onClick={() => {
-						setMenuBarStatus(false)
-					}} className="fixed w-[100vw] h-[100vh] left-0 top-0 z-[100] bg-primary/50 backdrop-blur-sm"></div>
-					<div className="fixed left-0 top-0 h-[100vh] w-[40%] max-sm:w-[80%] p-5 z-[110] border-r-2 bg-primary flex flex-col">
-						<div className="w-full">
-							<i onClick={() => {
-								setMenuBarStatus(false)
-							}} class="fas fa-arrow-right-to-bracket rotate-180 text-2xl text-white/50
-					hover:text-white/100 float-right m-2" aria-hidden="true"></i>
-						</div>
-						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Archive</p>
-						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Trash</p>
-						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Settings</p>
-						<p className="p-3 bg-secondary m-2 rounded-md hover:bg-red-500 mt-auto">Sign out</p>
-					</div>
-				</div>
+				<MenubarComponent setMenuBarStatus={setMenuBarStatus}  />
 			)}
 
-			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Add Button +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Mobile Task Add Button +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
-			<div className="fixed bottom-6 right-6 z-50 sm:hidden">
+			<div className="fixed bottom-6 right-6 z-[50] sm:hidden">
 				<i onClick={() => {
-						setAddTask(true);
-				}} class="fa fa-plus-circle text-4xl" aria-hidden="true"></i>
+						setAddTask(true)
+				}} className="fa fa-plus-circle text-4xl" aria-hidden="true"></i>
 			</div>
 
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Delete Modal +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 			
 			{DeleteModelStatus && (
-				<div className="fixed w-full h-[60px] bottom-1 p-2 right-0 cursor-pointer">
-					<div className="bg-primary w-full border border-red-500 h-[50px] p-5 rounded-md flex items-center justify-between ">
-						<p className="text-lg">Task Deleted</p>
-						<div onClick={UndoTask} className="flex items-center text-base hover:animate-pulse hover:text-green-400"> <i className="fas fa-arrow-rotate-left px-1" aria-hidden="true"></i> Undo</div>
-					</div>
-				</div>
+				<DeleteTaskModal  UndoTask={UndoTask}  />
 			)}
-
 
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task's Area +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
@@ -277,7 +363,9 @@ export const TaskComponent = () => {
 
 				{AddTask && (
 					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
-						<textarea
+						{/* This is for the Normal text tasks */}
+						{!AddCheckBoxTask? (
+							<textarea
 							onInput={() => {
 								AddTaskRef.current.style.outline =
 									"0.7px solid rgb(255,255,255)";
@@ -285,16 +373,63 @@ export const TaskComponent = () => {
 								AddTaskRef.current.style.height =
 									AddTaskRef.current.scrollHeight + "px";
 							}}
+							autoFocus
 							required
-							id="TaskTestBox"
 							placeholder="Please Enter a Task"
 							ref={AddTaskRef}
 							rows={1}
 							className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
+						) : (
+							// This is for the checklist type tasks
+							<div>
+								{CheckListItems.map((item,index) => (
+									<div ref={(el) => CheckListTaskRef.current[index] = el} key={index} className="flex items-center my-2">
+										<input className="w-3.5 h-3.5 mx-2" type="checkbox"/>
+										<textarea 
+										autoFocus
+										// We are setting the value of the textarea to the "Heading" property of the item in the "CheckListItems" state
+										value={item.Heading}
+										onKeyDown={(e) => {
+											// This is to add a new checklist item when the user presses the enter key
+											if (e.key === "Enter"){
+												e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
+												const UpdatedCheckListItems = [...CheckListItems,{}]
+												setCheckListItems(UpdatedCheckListItems)
+											}
+										}}
+										// Since we are setting the "Value" property of the textarea its not editable now, 
+										// so we are using the "onChange" event to update the "Heading" property of the item in the "CheckListItems" state
+										onChange={(e) => {
+											const UpdatedCheckListItems = [...CheckListItems]
+											UpdatedCheckListItems[index].Heading = e.target.value // This sets the current text value the dict
+											setCheckListItems(UpdatedCheckListItems)
+										}}	
+										placeholder="Please Enter a Task" 
+										className="mx-2 bg-black/80 min-h-[24px] w-full rounded-md text-white p-1"
+										rows="1"></textarea>
+										{/* This is to delete a particular check list item */}
+										<i onClick={() => {
+											const UpdatedCheckListItems = CheckListItems.filter((item,ind) => ind !== index) // This will remove the item from the "CheckListItems" state which has the same index as the "index" parameter
+											setCheckListItems(UpdatedCheckListItems)
+										}} className="fas fa-xmark text-sm text-white/50
+											hover:text-white/100" aria-hidden="true"></i>
+									</div>
+								))}
+								{/* This will add new item to the checklist */}
+								<p onClick={() => {
+									const UpdatedCheckListItems = [...CheckListItems,{}]
+									setCheckListItems(UpdatedCheckListItems)
+								}} className="cursor-pointer float-left underline underline-offset-2 text-sm pl-9 pt-2 text-white/50
+								hover:text-white/100"> <i className="fa fa-plus text-xs px-1" aria-hidden="true"></i>Add Item</p>
+							</div>
+						)}
 						<br />
 						<div className="flex mx-auto">
 							<div
-								onClick={SubmitTask}
+								// This is to add the task to the database
+								onClick={() => {
+									SubmitTask()
+								}}
 								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500">
 								Add Task{" "}
 								<i
@@ -303,12 +438,10 @@ export const TaskComponent = () => {
 							</div>
 							<div
 								// THis is to cancel the task adding process
-								onClick={() => setAddTask(false)}
-								onKeyUp={(e) => {
-									if (e.key === "Escape"){
-										console.warn("Escape Pressed")
-										setAddTask(false)
-									}
+								onClick={() => {
+									setAddTask(false)
+									// 👇 This is to reset the checklist items when the user cancels the task adding process
+									setCheckListItems([{Heading: "",Checked: false}])
 								}}
 								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 								Cancel{" "}
@@ -316,6 +449,24 @@ export const TaskComponent = () => {
 									className="fas fa-xmark pl-1"
 									aria-hidden="true"></i>{" "}
 							</div>
+							{/* This is responsible for switching between the Normal text task and checklist task */}
+							{!AddCheckBoxTask ? (
+								<div onClick={() =>{
+									setAddCheckBoxTask(true)
+								}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-indigo-500">
+									<div className="border-[2px] rounded-md">
+										<i className="fas fa-check text-xs px-1.5"></i>
+									</div>
+								</div>
+							) : (
+								<div onClick={() =>{
+									setAddCheckBoxTask(false)
+								}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-indigo-500">
+									<div className="border-[2px] rounded-md">
+										<i className="fas fa-i font-light text-xs px-1.5"></i>
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 				)}
@@ -332,8 +483,8 @@ export const TaskComponent = () => {
 								AddTaskRef.current.style.height =
 									AddTaskRef.current.scrollHeight + "px";
 							}}
+							autoFocus
 							required
-							id="TaskTestBox"
 							placeholder="Please Enter a Task"
 							ref={AddTaskRef}
 							value={(EditTaskValue.ModifiedItem).Heading} // This is to set the value of the textbox to the value that needs to be edited
@@ -382,24 +533,37 @@ export const TaskComponent = () => {
 					</div>
 				)}
 
+
+				{/* <br />
+				<br />
+				{(Tasks.filter((task) => task.Type == "CheckList")).map((item, index) => 
+					<>
+						<div key={index} className="relative overflow-hidden bg-primary p-10 rounded-md border my-5">
+							{(item.Contents).map((subitem,subindex) => 
+								<div key={subindex} className="flex items-center">
+									<div onClick={() => {
+										const UpdatedCheckListItems = JSON.parse(JSON.stringify(item))
+										UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked
+									
+										console.warn(item.Contents,UpdatedCheckListItems.Contents)
+										UpdateTask(UpdatedCheckListItems,item,index,"CheckList")
+										
+									}} className={`w-[13.5px] h-[13.5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
+										<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
+									</div>
+									<p className={`${subitem.Checked && "line-through brightness-50"}`}>{subitem.Heading}</p>
+								</div>
+							)}
+						</div>
+					</>
+				)} */}
+				
+
 				{/* +++++++++++++++++++++++++++++++++++++++++++ Error Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
 				{/* The error page is displayed if there are anyproblem in fetching the tasks */}
-				{ErrorPage ? (
-					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
-						<div>
-							<b>Something's Wrong !!</b>
-						</div>
-						<div>
-							Try Again Later or Click here
-							<i
-								// THis for refreshing the page
-								onClick={() => location.reload()}
-								class="fas fa-arrow-rotate-right px-1 cursor-pointer hover:text-green-300 hover:animate-pulse"
-								aria-hidden="true"></i>
-							to refresh
-						</div>
-					</div>
+				{ErrorStatus ? (
+					<ErrorPageComponent />
 				) : (
 
 					// +++++++++++++++++++++++++++++++++++++++++++++++++ Nothing Page and Loading Page +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -408,7 +572,7 @@ export const TaskComponent = () => {
 						{/* In here it first checks if the "Tasks" state has any content, */}
 						{/* if it has it will displays it */}
 						{Object.keys(Tasks).length === 0 ? (
-							<div>
+							<>
 								{/* If the "Tasks" state is empty, it checks if the "Fetched state is false or true" */}
 								{/* If it false it shows the loading animation else it assumes that there is no */}
 								{/* task in the database */}
@@ -430,158 +594,48 @@ export const TaskComponent = () => {
 										className="fas fa-arrows-rotate text-2xl text-white/50 m-5 animate-spin"
 										aria-hidden="true"></i>
 								)}
-							</div>
+							</>
 						) : (
 							// This accesses the contents in the fetched json data
-							// This part is separated as Pinned and Unpinned Tasks
-							<div>
+							<>
 								<div className="p-5" />  {/* This is to add some space between the nav bar and the tasks */}
 								{/* ++++++++++++++++++++++++++++++++++++++++ Pinned Tasks ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
-								<div>
-									{(Tasks.filter(item => item.Pinned === true)).length !== 0 && (<p className="p-2 text-base underline underline-offset-4 text-left">Pinned Tasks</p>)}
-									{/* Now at first we are displaying the the Pinned items that has "Pinned" = True */}
-									{Tasks.filter(
-										(item) => item.Pinned === true
-									).map((item, index) => (
-										<div
-											key={index}
-											ref={(el) =>
-												(TaskList.current[index] = el)
-											}
-											// We are using separate hover states for Pinned and Unpinned Tasks so as to not confict with Pinned and Unpinned Tasks
-											// Since we are using Index as the key, we can't use the same hover state for both
-											onMouseLeave={() => {
-												setPinnedTaskHover(-1);
-											}}
-											// This is to set the height of the TaskOption div as its a "absolute" positioned div
-											onClick={() => {
-												setTaskOptionHeight(
-													TaskList.current[index].clientHeight
-												);
-												setPinnedTaskHover(index);
-											}}
-											className="relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
-											<div>
-												<p>{item.Heading}</p>
+								{Tasks.map((item, index) => (
+									<div
+										key={index}
+										className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
+										
+										{item.Type === "CheckList" ? (
+											<div className="flex justify-center">
+											<div className="flex-1">
+												{(item.Contents).map((subitem,subindex) => 
+													<div key={subindex} className="flex items-center">
+														<div onClick={() => {
+															const UpdatedCheckListItems = JSON.parse(JSON.stringify(item))
+															UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked
+														
+															console.warn(item.Contents,UpdatedCheckListItems.Contents)
+															UpdateTask(UpdatedCheckListItems,item,index,"CheckList")
+															
+														}} className={`shrink-0 w-[13.5px] h-[13.5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
+															<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
+														</div>
+														<p className={`${subitem.Checked && "line-through brightness-50"}`}>{subitem.Heading}</p>
+													</div>
+												)}
 											</div>
-											{PinnedTaskHover === index && (
-												<div
-													style={{
-														height: TaskOptionHeight + "px",
-													}}
-													className="absolute top-0 right-0 flex flex-col items-center justify-around text-background bg-white w-10">
-													<i onClick={() => {
-														// This is to set the EditTask state to true to open the editting page
-														setEditTask(true)
-														// The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
-														setEditTaskValue({
-															OriginalItem: item,
-															ModifiedItem: { ...item },
-															Index: index
-														})
-													}} className="fas fa-pen p-1 hover:text-orange-400"></i>
-													<i
-														onClick={() => {
-															// Now inorder to update the item in MongoDb, We are sending the Original value
-															// and the modified value which sets the "Pinned" to "True"
-															const OriginalItem =
-																{ ...item }; // we are using spread operator to copy the content of one dict to another dict
-															if (item.Pinned === true) {
-																item.Pinned = false;
-															} else {
-																item.Pinned = true;
-															}
-															UpdateTask(item, OriginalItem, index);
-														}}
-														className={`fas fa-thumbtack p-1 pb-0.5 hover:text-blue-500 ${item.Pinned ===
-															false
-															? "rotate-45"
-															: "rotate-0 text-blue-500"
-															}`}
-														aria-hidden="true"></i>
-													<i
-														onClick={() =>
-															DeleteTask(item)
-														}
-														className="fas fa-trash p-1 hover:text-red-500"></i>
-												</div>
-											)}
+											<TaskOptions CustomClass={"ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask}  />
 										</div>
-									))}
-								</div>
-
-								{/* +++++++++++++++++++++++++++++++++++++++++++++ Un-Pinned Tasks+++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
-
-								<div>
-									{(((Tasks.filter(item => item.Pinned === true)).length !== 0) && ((Tasks.filter(item => item.Pinned === false)).length !== 0)) && (<p className="p-2 text-base underline underline-offset-4 text-left">Other Tasks</p>)}
-									{/* Now at first we are displaying the the Unpinned items that has "Pinned" = False */}
-									{Tasks.filter(
-										(item) => item.Pinned === false
-									).map((item, index) => (
-										<div
-											key={index}
-											ref={(el) => (TaskList.current[index] = el)}
-											// We are using separate hover states for Pinned and Unpinned Tasks so as to not confict with Pinned and Unpinned Tasks
-											// Since we are using Index as the key, we can't use the same hover state for both
-											onMouseLeave={() => {
-												setNonPinnedTaskHover(-1);
-											}}
-											// This is to set the height of the TaskOption div as its a "absolute" positioned div	
-											onClick={() => {
-												setTaskOptionHeight(
-													TaskList.current[index].clientHeight
-												);
-												setNonPinnedTaskHover(index);
-											}}
-											className="relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
-											<div>
-												<p>{item.Heading}</p>
+										) : (
+											<div className="flex justify-center">
+												<TaskOptions CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask}  />
+												<p className="flex-1">{item.Heading}</p>
+												<TaskOptions CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask}  />
 											</div>
-											{NonPinnedTaskHover === index && (
-												<div
-													style={{
-														height: TaskOptionHeight + "px",
-													}}
-													className="absolute top-0 right-0 flex flex-col items-center justify-around text-background bg-white w-10">
-													<i onClick={() => {
-														// This is to set the EditTask state to true to open the editting page
-														setEditTask(true)
-														// The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
-														setEditTaskValue({
-															OriginalItem: item,
-															ModifiedItem: { ...item },
-															Index: index
-														})
-													}} className="fas fa-pen p-1 hover:text-orange-400"></i>
-													<i
-														onClick={() => {
-															// Now inorder to update the item in MongoDb, We are sending the Original value
-															// and the modified value which sets the "Pinned" to "True"
-															const OriginalItem = { ...item }; // we are using spread operator to copy the content of one dict to another dict
-															if (item.Pinned === true) {
-																item.Pinned = false;
-															} else {
-																item.Pinned = true;
-															}
-															UpdateTask(item, OriginalItem, index);
-														}}
-														className={`fas fa-thumbtack p-1 pb-0.5 hover:text-blue-500 ${item.Pinned ===
-															false
-															? "rotate-45"
-															: "rotate-0 text-blue-500"
-															}`}
-														aria-hidden="true"></i>
-													<i
-														onClick={() =>
-															DeleteTask(item)
-														}
-														className="fas fa-trash p-1 hover:text-red-500"></i>
-												</div>
-											)}
-										</div>
-									))}
-								</div>
-							</div>
+										)}
+									</div>
+								))}
+							</>
 						)}
 					</div>
 				)}
