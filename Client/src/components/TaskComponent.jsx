@@ -75,7 +75,7 @@ export const TaskComponent = () => {
 
 	// **********************************************************************************************
 
-	// =======================================================
+	// ? =======================================================
 
 	// for fetching the data from db for first time and as well as when updated
 	useEffect(() => {
@@ -94,7 +94,7 @@ export const TaskComponent = () => {
 		}
 	}, [Refetch]);
 
-	// =======================================================
+	// ? =======================================================
 
 	// for receiving signal from backend if there is a db update and control the refetch state
 	useEffect(() => {
@@ -110,7 +110,7 @@ export const TaskComponent = () => {
 		};
 	});
 
-	// =======================================================
+	// ? =======================================================
 
 	// This is to control the delete modal visibility
 	useEffect(() => {
@@ -129,7 +129,7 @@ export const TaskComponent = () => {
 		}
 	},[DeleteModelStatus])
 
-	// =======================================================
+	// ? =======================================================
 
 	// This is to turn the Checklist type task to normal text task when all the items in the
 	// checklist are removed
@@ -141,26 +141,7 @@ export const TaskComponent = () => {
 		}
 	},[CheckListItems])
 
-	// =======================================================
-
-	useEffect(() => {
-		// const newPinnedTasks = Tasks.filter((task) => task.Pinned === true)
-		// const newUnPinnedTasks = Tasks.filter((task) => task.Pinned === false)
-
-		// if (!isEqual(PinnedTasks,newPinnedTasks)){
-		// 	setPinnedTasks(newPinnedTasks)
-		// }
-		
-		// else if (!isEqual(UnPinnedTasks,newUnPinnedTasks)){
-		// 	setUnPinnedTasks(newUnPinnedTasks)
-		// }
-
-		setPinnedTasks([]),
-		setPinnedTasks(Tasks.filter((task) => task.Pinned === true))
-		setUnPinnedTasks([])
-		setUnPinnedTasks(Tasks.filter((task) => task.Pinned === false))
-		console.log([PinnedTaskRef,UnPinnedTaskRef])
-	},[Tasks])
+	// ? =======================================================
 
 	// **********************************************************************************************
 
@@ -290,7 +271,7 @@ export const TaskComponent = () => {
 
 	// This is to update the task in the DB
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
-	function UpdateTask(ModifiedItem, OriginalItem, index, Type="TextTask") {
+	function UpdateTask(ModifiedItem, OriginalItem, index) {
 		fetch("http://localhost:6565/update", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -304,26 +285,41 @@ export const TaskComponent = () => {
 
 		// After updating, inorder for fast update we are updating the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
-		// 👇 This will handle the text type tasks
-		if (Type === "TextTask"){
-			console.warn("Its a TextTask")
-			const TasksCopy = JSON.parse(JSON.stringify(Tasks)); // We are making a deep copy of the Tasks state as don't want to share the same memory location
-			TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
-			setTasks(() => TasksCopy); // Now we are updating the Tasks state with the updated TasksCopy
-		} 
-		// 👇 This will handle the check tasks
-		else if (Type === "CheckList"){
-			console.warn("Its a checklist")
 
-			// we are spliting the tasks into 2 parts, one is the normal text type tasks and the other is the checklist type tasks
-			// because the index parameter in the "UpdateTask" function is the index of the checklist type tasks in the "Tasks" state not the combined index
-			const TasksCopy_TextTasks = JSON.parse(JSON.stringify(Tasks.filter((task) => task.Type != "CheckList"))); // This is the normal text type tasks
-			const TasksCopy_Checklist = JSON.parse(JSON.stringify(Tasks.filter((task) => task.Type == "CheckList"))); // This is the checklist type tasks
-			TasksCopy_Checklist[index] = ModifiedItem // We are updating the particular checklist type task which needs to be updated according to the "index" parameter with the modified item
-			setTasks(() => [...TasksCopy_TextTasks,...TasksCopy_Checklist])
-		}
-
+		const TasksCopy = JSON.parse(JSON.stringify(Tasks)); // We are making a deep copy of the Tasks state as don't want to share the same memory location
+		TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
+		setTasks(() => TasksCopy); // Now we are updating the Tasks state with the updated TasksCopy
 	}
+
+	// **********************************************************************************************
+
+	function TaskDisplay({item, index, UpdateTask, setEditTask, setEditTaskValue, DeleteTask}) {
+		if (item.Type === "CheckList") {
+			return (
+				<div className="flex-1">
+					{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
+							<div onClick={() => {
+									const UpdatedCheckListItems = JSON.parse(JSON.stringify(item));
+									UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked;
+									UpdateTask(UpdatedCheckListItems, item, index, "CheckList");
+								}} className={`shrink-0 w-[13.5px] h-[13.5px] mt-[5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
+								<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
+							</div>
+							<p className={`${subitem.Checked && "line-through brightness-50"} text-left`}>{subitem.Heading}</p>
+						</div>)}
+				</div>
+			)
+		} else {
+			return (
+				<div className="flex justify-center">
+					<TaskOptions CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<p className="flex-1">{item.Heading}</p>
+					<TaskOptions CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+				</div>
+			)
+		}	
+
+    }
 
 	// **********************************************************************************************
 
@@ -532,31 +528,6 @@ export const TaskComponent = () => {
 						</div>
 					</div>
 				)}
-
-
-				{/* <br />
-				<br />
-				{(Tasks.filter((task) => task.Type == "CheckList")).map((item, index) => 
-					<>
-						<div key={index} className="relative overflow-hidden bg-primary p-10 rounded-md border my-5">
-							{(item.Contents).map((subitem,subindex) => 
-								<div key={subindex} className="flex items-center">
-									<div onClick={() => {
-										const UpdatedCheckListItems = JSON.parse(JSON.stringify(item))
-										UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked
-									
-										console.warn(item.Contents,UpdatedCheckListItems.Contents)
-										UpdateTask(UpdatedCheckListItems,item,index,"CheckList")
-										
-									}} className={`w-[13.5px] h-[13.5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
-										<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
-									</div>
-									<p className={`${subitem.Checked && "line-through brightness-50"}`}>{subitem.Heading}</p>
-								</div>
-							)}
-						</div>
-					</>
-				)} */}
 				
 
 				{/* +++++++++++++++++++++++++++++++++++++++++++ Error Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
@@ -600,41 +571,10 @@ export const TaskComponent = () => {
 							<>
 								<div className="p-5" />  {/* This is to add some space between the nav bar and the tasks */}
 								{/* ++++++++++++++++++++++++++++++++++++++++ Pinned Tasks ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
-								{Tasks.map((item, index) => (
-									<div
-										key={index}
-										className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
-										
-										{item.Type === "CheckList" ? (
-											<div className="flex justify-center">
-											<div className="flex-1">
-												{(item.Contents).map((subitem,subindex) => 
-													<div key={subindex} className="flex items-center">
-														<div onClick={() => {
-															const UpdatedCheckListItems = JSON.parse(JSON.stringify(item))
-															UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked
-														
-															console.warn(item.Contents,UpdatedCheckListItems.Contents)
-															UpdateTask(UpdatedCheckListItems,item,index,"CheckList")
-															
-														}} className={`shrink-0 w-[13.5px] h-[13.5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
-															<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
-														</div>
-														<p className={`${subitem.Checked && "line-through brightness-50"}`}>{subitem.Heading}</p>
-													</div>
-												)}
-											</div>
-											<TaskOptions CustomClass={"ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask}  />
-										</div>
-										) : (
-											<div className="flex justify-center">
-												<TaskOptions CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask}  />
-												<p className="flex-1">{item.Heading}</p>
-												<TaskOptions CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask}  />
-											</div>
-										)}
-									</div>
-								))}
+								{Tasks.map((item, index) => 
+									<div key={index} className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
+										<TaskDisplay item={item} index={index}  UpdateTask={UpdateTask} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} DeleteTask={DeleteTask}  />
+									</div>)}
 							</>
 						)}
 					</div>
@@ -642,4 +582,6 @@ export const TaskComponent = () => {
 			</div>
 		</div>
 	);
-};
+
+    
+  };

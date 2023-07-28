@@ -78,7 +78,8 @@ def UpdateData():
     ModifiedItem["_id"] = ObjectId(ModifiedItem["_id"])
     
     ModifiedItem = {"$set" : ModifiedItem}
-    print({"_id":  OriginalItem["_id"]},ModifiedItem)
+    # print({"_id":  OriginalItem["_id"]},ModifiedItem)
+    print(OriginalItem,ModifiedItem)
     
     collection.update_many({"_id":  OriginalItem["_id"]},ModifiedItem)
     socketio.emit("DB_Update")

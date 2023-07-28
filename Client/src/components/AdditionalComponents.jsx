@@ -45,26 +45,6 @@ export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, 
 				}}
 				className="fas fa-pen p-1 hover:text-orange-400"></i>
 			<i
-				onClick={() => {
-					// Now inorder to update the item in MongoDb, We are sending the Original value
-					// and the modified value which sets the "Pinned" to "True"
-					const OriginalItem = { ...item }; // we are using spread operator to copy the content of one dict to another dict
-
-					if (item.Pinned === true) {
-						item.Pinned = false;
-					} else {
-						item.Pinned = true;
-					}
-
-					UpdateTask(item, OriginalItem, index);
-				}}
-				className={`fas fa-thumbtack p-1 pb-0.5 hover:text-blue-500 ${
-					item.Pinned === false
-						? "rotate-45"
-						: "rotate-0 text-blue-500"
-				}`}
-				aria-hidden="true"></i>
-			<i
 				onClick={() => DeleteTask(item)}
 				className="fas fa-trash p-1 hover:text-red-500"></i>
 		</div>
