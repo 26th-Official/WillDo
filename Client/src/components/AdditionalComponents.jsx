@@ -28,20 +28,29 @@ export function ErrorPageComponent({}) {
 	);
 }
 
-export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, UpdateTask, index, DeleteTask }) {
-
+export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, setEditCheckBoxTask, setCheckListItems, index, DeleteTask }) {
 	return (
 		<div className={`${CustomClass} hidden m-[-40px] group-hover:flex flex-col items-center justify-around text-background bg-white w-10`}>
 			<i
 				onClick={() => {
-					// This is to set the EditTask state to true to open the editting page
-					setEditTask(true); // The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
+					if (item.Type === "TextTask"){
+						// This is to set the EditTask state to true to open the editting page
+						setEditTask(true); // The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
 
-					setEditTaskValue({
-						OriginalItem: item,
-						ModifiedItem: { ...item },
-						Index: index,
-					});
+						setEditTaskValue({
+							OriginalItem: item,
+							ModifiedItem: { ...item },
+							Index: index,
+						});
+					} else {
+						setEditTask(true); // This is to set the EditTask state to true to open the editting page
+						setEditCheckBoxTask(true)
+						setCheckListItems({
+							...item,
+							Index: index,
+							OriginalItem: item,
+						})
+					}
 				}}
 				className="fas fa-pen p-1 hover:text-orange-400"></i>
 			<i

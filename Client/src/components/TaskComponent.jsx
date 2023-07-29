@@ -9,6 +9,7 @@ import isEqual from "lodash/isEqual"
 import { DeleteTaskModal, ErrorPageComponent, TaskOptions } from './AdditionalComponents';
 import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
+import { omit } from "lodash";
 
 // **********************************************************************************************
 
@@ -16,8 +17,6 @@ export const TaskComponent = () => {
 	// =======================================================
 	// to store the tasks from db
 	const [Tasks, setTasks] = useState([]);
-	const [PinnedTasks, setPinnedTasks] = useState([]);
-	const [UnPinnedTasks, setUnPinnedTasks] = useState([]);
 
 	// its for displaying the div for typing new tasks
 	const [AddTask, setAddTask] = useState(false);
@@ -33,6 +32,9 @@ export const TaskComponent = () => {
 	// =======================================================
 	// its for displaying the div for typing new checkbox type tasks (Its the button in the add task page to add checkbox type tasks)
 	const [AddCheckBoxTask, setAddCheckBoxTask] = useState(false);
+	
+	const [EditCheckBoxTask, setEditCheckBoxTask] = useState(false);
+	
 	// This stores the Items inside the "Checklist" type tasks
 	const [CheckListItems, setCheckListItems] = useState([{Heading: "",Checked: false}]);
 	// =======================================================
@@ -70,9 +72,6 @@ export const TaskComponent = () => {
 	// the textbox which are empty
 	const CheckListTaskRef = useRef([])
 
-	const PinnedTaskRef = useRef([])
-	const UnPinnedTaskRef = useRef([])
-
 	// **********************************************************************************************
 
 	// ? =======================================================
@@ -90,7 +89,9 @@ export const TaskComponent = () => {
 					setFetched(true);
 					setRefetch(false);
 				})
-				.catch(() => setErrorStatus(true));
+				.catch(() => {
+					setErrorStatus(true)
+				});
 		}
 	}, [Refetch]);
 
@@ -268,7 +269,7 @@ export const TaskComponent = () => {
 	}
 
 	// **********************************************************************************************
-
+	
 	// This is to update the task in the DB
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
 	function UpdateTask(ModifiedItem, OriginalItem, index) {
@@ -296,29 +297,33 @@ export const TaskComponent = () => {
 	function TaskDisplay({item, index, UpdateTask, setEditTask, setEditTaskValue, DeleteTask}) {
 		if (item.Type === "CheckList") {
 			return (
-				<div className="flex-1">
-					{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
-							<div onClick={() => {
-									const UpdatedCheckListItems = JSON.parse(JSON.stringify(item));
-									UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked;
-									UpdateTask(UpdatedCheckListItems, item, index, "CheckList");
-								}} className={`shrink-0 w-[13.5px] h-[13.5px] mt-[5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
-								<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
+				<div className="flex">
+					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<div className="flex-1">
+						{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
+								<div onClick={() => {
+										const UpdatedCheckListItems = JSON.parse(JSON.stringify(item));
+										UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked;
+										UpdateTask(UpdatedCheckListItems, item, index);
+									}} className={`shrink-0 w-[13.5px] h-[13.5px] mt-[5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
+									<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
+								</div>
+								<p className={`${subitem.Checked && "line-through brightness-50"} text-left`}>{subitem.Heading}</p>
 							</div>
-							<p className={`${subitem.Checked && "line-through brightness-50"} text-left`}>{subitem.Heading}</p>
-						</div>)}
+						)}
+					</div>
+					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 				</div>
 			)
 		} else {
 			return (
 				<div className="flex justify-center">
-					<TaskOptions CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 					<p className="flex-1">{item.Heading}</p>
-					<TaskOptions CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 				</div>
 			)
 		}	
-
     }
 
 	// **********************************************************************************************
@@ -438,6 +443,7 @@ export const TaskComponent = () => {
 									setAddTask(false)
 									// 👇 This is to reset the checklist items when the user cancels the task adding process
 									setCheckListItems([{Heading: "",Checked: false}])
+									setAddCheckBoxTask(false)
 								}}
 								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 								Cancel{" "}
@@ -471,61 +477,146 @@ export const TaskComponent = () => {
 
 				{EditTask && (
 					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
-						<textarea
-							onInput={() => {
-								AddTaskRef.current.style.outline =
-									"0.7px solid rgb(255,255,255)";
-								AddTaskRef.current.style.height = "auto";
-								AddTaskRef.current.style.height =
-									AddTaskRef.current.scrollHeight + "px";
-							}}
-							autoFocus
-							required
-							placeholder="Please Enter a Task"
-							ref={AddTaskRef}
-							value={(EditTaskValue.ModifiedItem).Heading} // This is to set the value of the textbox to the value that needs to be edited
-							// Now we are using the onChange event to update the value of the textbox as its not possible to edit the value of the textbox,
-							// since we have used the "value" attribute to set the value of the textbox
-							onChange={(text) => {
-								let TextboxText = text.target.value // This is to get the value of the textbox
-								const ModifiedItem = { ...(EditTaskValue.ModifiedItem) } // This is to copy the ModifiedItem object from the EditTaskValue state
-								ModifiedItem.Heading = TextboxText // Now we are updating the ModifiedItem's Heading with the new value which is from the textbox
+						{EditCheckBoxTask ? (
+							<div className="flex flex-col">
+								<div>
+									{(CheckListItems.Contents).map((item,index) => (
+										<div ref={(el) => CheckListTaskRef.current[index] = el} key={index} className="flex items-center my-2">
+											<input onChange={() =>{
+												const UpdatedCheckListItems = {...CheckListItems, Contents :[...CheckListItems.Contents]}
+												UpdatedCheckListItems.Contents[index].Checked = !item.Checked // This will toggle the "Checked" property of the item in the "CheckListItems" state
+												setCheckListItems(UpdatedCheckListItems)
+											}} checked={item.Checked} className="w-3.5 h-3.5 mx-2" type="checkbox"/>
+											<textarea 
+											autoFocus
+											// We are setting the value of the textarea to the "Heading" property of the item in the "CheckListItems" state
+											value={item.Heading}
+											onKeyDown={(e) => {
+												// This is to add a new checklist item when the user presses the enter key
+												if (e.key === "Enter"){
+													e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
+													const UpdatedCheckListItems = [...CheckListItems,{Heading: "",Checked: false}]
+													setCheckListItems(UpdatedCheckListItems)
+												}
+											}}
+											// Since we are setting the "Value" property of the textarea its not editable now, 
+											// so we are using the "onChange" event to update the "Heading" property of the item in the "CheckListItems" state
+											onChange={(e) => {
+												const UpdatedCheckListItems = {...CheckListItems, Contents :[...CheckListItems.Contents]}
+												UpdatedCheckListItems.Contents[index].Heading = e.target.value // This sets the current text value the dict
+												setCheckListItems(UpdatedCheckListItems)
+											}}	
+											placeholder="Please Enter a Task" 
+											className="mx-2 bg-black/80 min-h-[24px] w-full rounded-md text-white p-1"
+											rows="1"></textarea>
+											{/* This is to delete a particular check list item */}
+											<i onClick={() => {
+												const UpdatedCheckListItems = {...CheckListItems, Contents :(CheckListItems.Contents).filter((item,ind) => ind !== index)} // This will remove the item from the "CheckListItems" state which has the same index as the "index" parameter
+												setCheckListItems(UpdatedCheckListItems)
+											}} className="fas fa-xmark text-sm text-white/50
+												hover:text-white/100" aria-hidden="true"></i>
+										</div>
+									))}
+									<p onClick={() => {
+										const UpdatedCheckListItems = {...CheckListItems, Contents :[...CheckListItems.Contents,{Heading: "",Checked: false}]}
+										setCheckListItems(UpdatedCheckListItems)
+									}} className="cursor-pointer float-left underline underline-offset-2 text-sm pl-9 pt-2 text-white/50
+									hover:text-white/100"> <i className="fa fa-plus text-xs px-1" aria-hidden="true"></i>Add Item</p>
 
-								// After updating the ModifiedItem's Heading we are updating the EditTaskValue state with the new ModifiedItem
-								setEditTaskValue({
-									OriginalItem: EditTaskValue.OriginalItem,
-									ModifiedItem: ModifiedItem,
-									Index: EditTaskValue.Index
-								})
-
-							}}
-							rows={1}
-							className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
-						<br />
-						<div className="flex mx-auto">
-							<div
-								onClick={() => {
-									// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
-									UpdateTask(EditTaskValue.ModifiedItem, EditTaskValue.OriginalItem, EditTaskValue.Index)
-									// After updating the task we are setting the EditTask state to false to close the editing page
-									setEditTask(false)
-								}}
-								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500">
-								Confirm{" "}
-								<i
-									className="fas fa-chevron-right pl-1"
-									aria-hidden="true"></i>{" "}
+								</div>
+								{/* This will add new item to the checklist */}
+								
+								<br />
+								<div className="flex mx-auto">
+									<div
+										onClick={() => {
+											delete CheckListItems.Index
+											// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
+											UpdateTask(omit(CheckListItems,"Index","OriginalItem"), {_id : CheckListItems._id}, CheckListItems.Index)
+											// After updating the task we are setting the EditTask state to false to close the editing page
+											setEditTask(false)
+											setCheckListItems([[{Heading: "",Checked: false}]])
+										}}
+										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500">
+										Confirm{" "}
+										<i
+											className="fas fa-chevron-right pl-1"
+											aria-hidden="true"></i>{" "}
+									</div>
+									<div
+										// THis is to cancel the task editting process
+										onClick={() => {
+											setEditTask(false)
+											setEditCheckBoxTask(false)
+											setCheckListItems([[{Heading: "",Checked: false}]])
+										}}
+										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
+										Cancel{" "}
+										<i
+											className="fas fa-xmark pl-1"
+											aria-hidden="true"></i>{" "}
+									</div>
+								</div>
 							</div>
-							<div
-								// THis is to cancel the task editting process
-								onClick={() => setEditTask(false)}
-								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
-								Cancel{" "}
-								<i
-									className="fas fa-xmark pl-1"
-									aria-hidden="true"></i>{" "}
+						) : (
+							<div className="flex flex-col">
+								<textarea
+									onInput={() => {
+										AddTaskRef.current.style.outline =
+											"0.7px solid rgb(255,255,255)";
+										AddTaskRef.current.style.height = "auto";
+										AddTaskRef.current.style.height =
+											AddTaskRef.current.scrollHeight + "px";
+									}}
+									autoFocus
+									required
+									placeholder="Please Enter a Task"
+									ref={AddTaskRef}
+									value={(EditTaskValue.ModifiedItem).Heading} // This is to set the value of the textbox to the value that needs to be edited
+									// Now we are using the onChange event to update the value of the textbox as its not possible to edit the value of the textbox,
+									// since we have used the "value" attribute to set the value of the textbox
+									onChange={(text) => {
+										let TextboxText = text.target.value // This is to get the value of the textbox
+										const ModifiedItem = { ...(EditTaskValue.ModifiedItem) } // This is to copy the ModifiedItem object from the EditTaskValue state
+										ModifiedItem.Heading = TextboxText // Now we are updating the ModifiedItem's Heading with the new value which is from the textbox
+		
+										// After updating the ModifiedItem's Heading we are updating the EditTaskValue state with the new ModifiedItem
+										setEditTaskValue({
+											OriginalItem: EditTaskValue.OriginalItem,
+											ModifiedItem: ModifiedItem,
+											Index: EditTaskValue.Index
+										})
+		
+									}}
+									rows={1}
+									className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
+								<br />
+								<div className="flex mx-auto">
+									<div
+										onClick={() => {
+											// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
+											UpdateTask(EditTaskValue.ModifiedItem, EditTaskValue.OriginalItem, EditTaskValue.Index)
+											// After updating the task we are setting the EditTask state to false to close the editing page
+											setEditTask(false)
+										}}
+										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500">
+										Confirm{" "}
+										<i
+											className="fas fa-chevron-right pl-1"
+											aria-hidden="true"></i>{" "}
+									</div>
+									<div
+										// THis is to cancel the task editting process
+										onClick={() => setEditTask(false)}
+										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
+										Cancel{" "}
+										<i
+											className="fas fa-xmark pl-1"
+											aria-hidden="true"></i>{" "}
+									</div>
+								</div>
 							</div>
-						</div>
+						)}
 					</div>
 				)}
 				
