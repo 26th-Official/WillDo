@@ -3,13 +3,14 @@ import React, { useEffect, useRef, useState } from "react";
 // for realtime data fetching from backend
 import io from "socket.io-client";
 
-import isEqual from "lodash/isEqual"
+import { omit, isEqual } from "lodash";
+
+import { HuePicker } from 'react-color';
 
 // Custom Components
 import { DeleteTaskModal, ErrorPageComponent, TaskOptions } from './AdditionalComponents';
 import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
-import { omit } from "lodash";
 
 // **********************************************************************************************
 
@@ -21,6 +22,9 @@ export const TaskComponent = () => {
 	// its for displaying the div for typing new tasks
 	const [AddTask, setAddTask] = useState(false);
 	// =======================================================
+
+	const [ColorPickerState, setColorPickerState] = useState(false)
+	const [CurrentColor, setCurrentColor] = useState("#232323")
 	
 	// =======================================================
 	// to check is the tasks are fetched for first time or else display the loading animation
@@ -89,8 +93,9 @@ export const TaskComponent = () => {
 					setFetched(true);
 					setRefetch(false);
 				})
-				.catch(() => {
+				.catch((error) => {
 					setErrorStatus(true)
+					console.error(error)
 				});
 		}
 	}, [Refetch]);
@@ -167,6 +172,7 @@ export const TaskComponent = () => {
 					body: JSON.stringify({
 						Heading: Heading,
 						Pinned: false,
+						Color: CurrentColor
 					}),
 				})
 					.then((res) => res.json())
@@ -178,6 +184,7 @@ export const TaskComponent = () => {
 					{
 						Heading: Heading,
 						Pinned: false,
+						Color: CurrentColor
 					},
 				]);
 			}
@@ -207,7 +214,8 @@ export const TaskComponent = () => {
 					body: JSON.stringify({
 						Contents: CheckListItems,
 						Pinned: false,
-						Type: "CheckList"
+						Type: "CheckList",
+						Color: CurrentColor
 					}),
 				})
 					.then((res) => res.json())
@@ -222,12 +230,15 @@ export const TaskComponent = () => {
 				{	
 					Contents: CheckListItems, // We are adding the checklist items to the "Contents" key
 					Pinned: false,
-					Type: "CheckList"
+					Type: "CheckList",
+					Color: CurrentColor
 				},
 			]);
 			}
 
 		}
+
+		setCurrentColor("#232323")
 	}
 
 	// **********************************************************************************************
@@ -363,7 +374,7 @@ export const TaskComponent = () => {
 				{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Adding Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
 				{AddTask && (
-					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
+					<div style={{backgroundColor : CurrentColor}} className={`bg-primary p-10 flex flex-col rounded-md border my-5`}>
 						{/* This is for the Normal text tasks */}
 						{!AddCheckBoxTask? (
 							<textarea
@@ -426,6 +437,9 @@ export const TaskComponent = () => {
 						)}
 						<br />
 						<div className="flex mx-auto">
+							<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
+								<img width={"25px"} src="/color_picker.png"/>
+							</div>
 							<div
 								// This is to add the task to the database
 								onClick={() => {
@@ -444,6 +458,7 @@ export const TaskComponent = () => {
 									// 👇 This is to reset the checklist items when the user cancels the task adding process
 									setCheckListItems([{Heading: "",Checked: false}])
 									setAddCheckBoxTask(false)
+									setCurrentColor("#232323")
 								}}
 								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 								Cancel{" "}
@@ -470,6 +485,18 @@ export const TaskComponent = () => {
 								</div>
 							)}
 						</div>
+						<br />
+						{ColorPickerState && (
+							<div className="flex items-center space-x-3 mx-auto">
+								<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
+									<i onClick={() => {setCurrentColor("#232323")}} className="fas fa-ban text-white/50 group-hover:text-white/100"></i>
+								</div>
+								<HuePicker color={CurrentColor} onChange={(color) => {
+									console.log(color.hex)
+									setCurrentColor(color.hex)
+								}}/>
+							</div>
+						)}
 					</div>
 				)}
 
@@ -549,6 +576,7 @@ export const TaskComponent = () => {
 											setEditTask(false)
 											setEditCheckBoxTask(false)
 											setCheckListItems([[{Heading: "",Checked: false}]])
+											setCurrentColor("#232323")
 										}}
 										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 										Cancel{" "}
@@ -607,7 +635,10 @@ export const TaskComponent = () => {
 									</div>
 									<div
 										// THis is to cancel the task editting process
-										onClick={() => setEditTask(false)}
+										onClick={() => {
+											setEditTask(false)
+											setCurrentColor("#232323")
+										}}
 										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 										Cancel{" "}
 										<i
@@ -663,7 +694,7 @@ export const TaskComponent = () => {
 								<div className="p-5" />  {/* This is to add some space between the nav bar and the tasks */}
 								{/* ++++++++++++++++++++++++++++++++++++++++ Pinned Tasks ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 								{Tasks.map((item, index) => 
-									<div key={index} className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
+									<div key={index} style={{backgroundColor: item.Color}} className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
 										<TaskDisplay item={item} index={index}  UpdateTask={UpdateTask} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} DeleteTask={DeleteTask}  />
 									</div>)}
 							</>
