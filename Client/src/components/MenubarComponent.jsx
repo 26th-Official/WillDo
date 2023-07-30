@@ -14,8 +14,7 @@ export function MenubarComponent({setMenuBarStatus}) {
 				}} className="fas fa-arrow-right-to-bracket rotate-180 text-2xl text-white/50
 					hover:text-white/100 float-right m-2" aria-hidden="true"></i>
 			</div>
-			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Archive</p>
-			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Trash</p>
+			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Trash</p>			
 			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Settings</p>
 			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-red-500 mt-auto">Sign out</p>
 		</div>

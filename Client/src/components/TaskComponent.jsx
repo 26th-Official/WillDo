@@ -149,6 +149,17 @@ export const TaskComponent = () => {
 
 	// ? =======================================================
 
+	// This is to close the color picker when the "EditTask" or "AddTask" is false 
+	// and also to set the "CurrentColor" to default (#232323)
+	useEffect(() => {
+		if (!EditTask && !AddTask){
+			setColorPickerState(false)
+			setCurrentColor("#232323")
+		}
+	},[EditTask,AddTask])
+
+	// ? =======================================================
+
 	// **********************************************************************************************
 
 	// This is for submitting the task after typing the in the Add task div
@@ -238,7 +249,6 @@ export const TaskComponent = () => {
 
 		}
 
-		setCurrentColor("#232323")
 	}
 
 	// **********************************************************************************************
@@ -308,9 +318,9 @@ export const TaskComponent = () => {
 	function TaskDisplay({item, index, UpdateTask, setEditTask, setEditTaskValue, DeleteTask}) {
 		if (item.Type === "CheckList") {
 			return (
-				<div className="flex">
+				<div className="flex group">
 					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
-					<div className="flex-1">
+					<div className="flex-1 group-hover:max-sm:ml-5">
 						{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
 								<div onClick={() => {
 										const UpdatedCheckListItems = JSON.parse(JSON.stringify(item));
@@ -458,7 +468,6 @@ export const TaskComponent = () => {
 									// 👇 This is to reset the checklist items when the user cancels the task adding process
 									setCheckListItems([{Heading: "",Checked: false}])
 									setAddCheckBoxTask(false)
-									setCurrentColor("#232323")
 								}}
 								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 								Cancel{" "}
@@ -576,7 +585,6 @@ export const TaskComponent = () => {
 											setEditTask(false)
 											setEditCheckBoxTask(false)
 											setCheckListItems([[{Heading: "",Checked: false}]])
-											setCurrentColor("#232323")
 										}}
 										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 										Cancel{" "}
@@ -637,7 +645,6 @@ export const TaskComponent = () => {
 										// THis is to cancel the task editting process
 										onClick={() => {
 											setEditTask(false)
-											setCurrentColor("#232323")
 										}}
 										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-red-500">
 										Cancel{" "}
