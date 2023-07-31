@@ -6,8 +6,12 @@ from flask_cors import CORS
 # For realtime updation of data
 from flask_socketio import SocketIO
 
+# =====================================
+
 # This is to handle the object id in mongo db since it is not json serializable
 from bson.objectid import ObjectId
+
+import bcrypt
 
 # =====================================
 # For accessing the Mongo DB
@@ -17,13 +21,14 @@ from pymongo.server_api import ServerApi
 # for multithreading purpose
 from threading import Thread
 
-# =====================================
+# ?====================================================
 
 # DB configs
 uri = "mongodb+srv://26th_Official:qwerty123@willdo.svxpxac.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(uri, server_api=ServerApi("1"))
 db = client["Data"]
 collection = db["UserData"]
+User_Collection = db["Users"]
 
 # Initializing Flask and Socket with CORS
 app = Flask(__name__)
@@ -36,6 +41,9 @@ DB_CheckPipeline = [{"$match" : {
         "$in" : ["insert","update","replace","delete"]
     }
 }}]
+
+# ?====================================================
+
 
 # This is for the checking the logs in DB for the purpose of sending signal to frontend
 def DB_Update():
@@ -96,6 +104,39 @@ def GetAll():
         temp.append(i)
     return jsonify(temp)
 
+
+# !================= Authentication ===================================
+
+@app.route("/signup",methods=["POST"])
+def SignUp():
+    data = request.get_json()
+    print(data)
+    HashedPassword = bcrypt.hashpw(data["Password"].encode("utf-8"),bcrypt.gensalt())
+    if User_Collection.find_one({"Username" : data["Username"]}) == None:
+        PostResult = User_Collection.insert_one({**data,"Password":HashedPassword})
+        return jsonify({"status":"success", "id": str(PostResult.inserted_id)})
+    else:
+        return jsonify({"status":"failed", "reason": "User Already Exists!"},400)
+
+
+@app.route("/signin",methods=["POST"])
+def SignIn():
+    data = request.get_json()
+    print(data)
+    user_result = User_Collection.find_one({"Username" : data["Username"]})
+    if not user_result:
+        return jsonify({"status":"failed", "reason": "User Doesn't Exist!"},404) 
+    
+    if bcrypt.checkpw(data["Password"].encode("utf-8"),user_result["Password"]):
+        return jsonify({"status":"success"})
+    else:
+        return jsonify({"status":"failed", "reason": "Password Wrong!"},401) 
+
+# !====================================================================
+
+
+
+# ?====================================================
 
 
 if __name__ == '__main__':
