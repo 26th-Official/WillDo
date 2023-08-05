@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import axios from "../Modules/axios";
 
 // for realtime data fetching from backend
 import io from "socket.io-client";
@@ -16,6 +17,7 @@ import { NavbarComponent } from "./NavbarComponent";
 
 export const TaskComponent = () => {
 	// =======================================================
+	// let access_token = document.cookie.split(";").find((item) => item.startsWith("access_token")).split("=")[1]
 	// to store the tasks from db
 	const [Tasks, setTasks] = useState([]);
 
@@ -79,13 +81,13 @@ export const TaskComponent = () => {
 	// **********************************************************************************************
 
 	// ? =======================================================
-
+	
 	// for fetching the data from db for first time and as well as when updated
 	useEffect(() => {
 		if (Refetch) {
-			fetch("http://localhost:6565/getall")
-				.then((res) => res.json())
-				.then((res) => {
+
+			axios.get("/fetch").then((res) => ((res.data).Message).Data).then((res) => 
+				{
 					// This is to check if the data is changed or not so as to not cause latency issues
 					if(!isEqual(Tasks,res)){
 						setTasks(res)
@@ -103,18 +105,18 @@ export const TaskComponent = () => {
 	// ? =======================================================
 
 	// for receiving signal from backend if there is a db update and control the refetch state
-	useEffect(() => {
-		const socketio = io("http://localhost:6565/");
+	// useEffect(() => {
+	// 	const socketio = io("/");
 
-		socketio.on("DB_Update", () => {
-			console.log("Update has been Made");
-			setRefetch(true);
-		});
+	// 	socketio.on("DB_Update", () => {
+	// 		console.log("Update has been Made");
+	// 		setRefetch(true);
+	// 	});
 
-		return () => {
-			socketio.disconnect();
-		};
-	});
+	// 	return () => {
+	// 		socketio.disconnect();
+	// 	};
+	// });
 
 	// ? =======================================================
 
@@ -177,17 +179,19 @@ export const TaskComponent = () => {
 			} else {
 				AddTaskRef.current.style.outline = "none";
 				console.log(Heading);
-				fetch("http://localhost:6565/post", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						Heading: Heading,
-						Pinned: false,
-						Color: CurrentColor
-					}),
-				})
-					.then((res) => res.json())
-					.then((res) => console.log(res, "Inserted"));
+
+				axios.post("/new",{
+					Heading: Heading,
+					Pinned: false,
+					Color: CurrentColor
+				},{
+					headers : {
+						"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+					},
+				}).then((res) => res.data).then((res) => {
+					console.log(res, "Inserted")
+				});
+
 				setAddTask(false);
 				//  Adding the new task locally
 				setTasks([
@@ -219,18 +223,20 @@ export const TaskComponent = () => {
 			
 			// If all the checklist items are not empty then we add the task to the db and locally
 			if (CheckListCount === CheckListItems.length){
-				fetch("http://localhost:6565/post", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						Contents: CheckListItems,
-						Pinned: false,
-						Type: "CheckList",
-						Color: CurrentColor
-					}),
-				})
-					.then((res) => res.json())
-					.then((res) => console.log(res, "Inserted"));
+				
+				axios.post("/new",{
+					Contents: CheckListItems,
+					Pinned: false,
+					Type: "CheckList",
+					Color: CurrentColor
+				},{
+					headers : {
+						"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+					},
+				}).then((res) => res.data).then((res) => {
+					console.log(res, "Inserted")
+				});
+
 				setAddTask(false);
 				setCheckListItems([{Heading: "",Checked: false}])
 				setAddCheckBoxTask(false)
@@ -255,13 +261,12 @@ export const TaskComponent = () => {
 
 	// This is to delete the task from the DB
 	function DeleteTask(data) {
-		fetch("http://localhost:6565/delete", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(data),
-		})
-			.then((res) => console.log(res.json()))
-			.then((res) => console.log(res, "Deleted"));
+
+		axios.post("/delete",data,{
+			headers : {
+				"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+			},
+		}).then((res) => console.log(res.data))
 
 		// After deleting, inorder for fast update we are removing the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
@@ -273,16 +278,15 @@ export const TaskComponent = () => {
 
 	// This is to undo the last delete action
 	function UndoTask(){
-		fetch("http://localhost:6565/post", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					Heading: DeletedTasks[0].Heading,
-					Pinned: DeletedTasks[0].Pinned,
-				}),
-			})
-				.then((res) => res.json())
-				.then((res) => console.log(res, "Inserted"));
+
+		axios.post("/new",{
+			Heading: DeletedTasks[0].Heading,
+			Pinned: DeletedTasks[0].Pinned,
+		},{
+			headers : {
+				"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+			},
+		}).then((res) => console.log(res.data))
 
 		setTasks((prev) => [...prev,DeletedTasks[0]])
 		setDeleteModelStatus(false)
@@ -294,16 +298,15 @@ export const TaskComponent = () => {
 	// This is to update the task in the DB
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
 	function UpdateTask(ModifiedItem, OriginalItem, index) {
-		fetch("http://localhost:6565/update", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				OriginalItem: OriginalItem,
-				ModifiedItem: ModifiedItem,
-			}),
-		})
-			.then((res) => res.json())
-			.then((res) => console.log(res, "Updated"));
+
+		axios.post("/update",{
+			OriginalItem: OriginalItem,
+			ModifiedItem: ModifiedItem,
+		},{
+			headers : {
+				"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+			},
+		}).then((res) => console.log(res.data))
 
 		// After updating, inorder for fast update we are updating the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update

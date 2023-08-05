@@ -1,6 +1,18 @@
-import React from "react";
+import React, { useContext } from "react";
+import axios from "../Modules/axios";
+
+import AuthContext from "../Authentication/Components/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export function MenubarComponent({setMenuBarStatus}) {
+	const {AuthState, setAuthState} = useContext(AuthContext)
+
+    let Navigate = useNavigate()
+	function SignOut(){
+		axios.get("/signout").then((res) => {console.log(res.data)})
+		setAuthState(true)
+		Navigate("/")
+	}
 
 	return (
 	<>
@@ -16,7 +28,7 @@ export function MenubarComponent({setMenuBarStatus}) {
 			</div>
 			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Trash</p>			
 			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">Settings</p>
-			<p className="p-3 bg-secondary m-2 rounded-md hover:bg-red-500 mt-auto">Sign out</p>
+			<p onClick={SignOut} className="p-3 bg-secondary m-2 rounded-md hover:bg-red-500 mt-auto">Sign out</p>
 		</div>
 	</>
 )}

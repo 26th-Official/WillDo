@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export function DeleteTaskModal({UndoTask}) {
 	return (
@@ -33,7 +34,15 @@ export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, 
 		<div className={`${CustomClass} hidden m-[-40px] group-hover:flex flex-col items-center justify-around text-background bg-white w-10`}>
 			<i
 				onClick={() => {
-					if (item.Type === "TextTask"){
+					if (item.Type === "CheckList"){
+						setEditTask(true); // This is to set the EditTask state to true to open the editting page
+						setEditCheckBoxTask(true)
+						setCheckListItems({
+							...item,
+							Index: index,
+							OriginalItem: item,
+						})
+					} else {
 						// This is to set the EditTask state to true to open the editting page
 						setEditTask(true); // The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
 
@@ -42,14 +51,6 @@ export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, 
 							ModifiedItem: { ...item },
 							Index: index,
 						});
-					} else {
-						setEditTask(true); // This is to set the EditTask state to true to open the editting page
-						setEditCheckBoxTask(true)
-						setCheckListItems({
-							...item,
-							Index: index,
-							OriginalItem: item,
-						})
 					}
 				}}
 				className="fas fa-pen p-1 hover:text-orange-400"></i>
@@ -58,4 +59,22 @@ export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, 
 				className="fas fa-trash p-1 hover:text-red-500"></i>
 		</div>
 	);
+}
+
+export function HeaderComponent(){
+	
+	const Navigate = useNavigate()
+
+	return (
+		<div onClick={() => {
+			Navigate("/")
+		}} className="cursor-pointer">
+			<p className="text-8xl max-sm:text-7xl font-Shadows_Into_Light">Will Do</p>
+			<div className="h-1" />
+				<p className="text-base underline underline-offset-2 max-sm:text-sm decoration-yellow-400">
+					Where Simplicity Meets Success!
+				</p>
+			<div />
+		</div>
+	)
 }
