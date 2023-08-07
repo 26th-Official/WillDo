@@ -1,7 +1,10 @@
-import React from "react";
+import React, {useContext} from "react";
 import { useNavigate } from "react-router-dom";
+import AuthContext from "../Authentication/Components/AuthContext";
+import axios from "../Modules/axios";
 
-export function HomeComponent({setAuthMode}) {
+export function HomeComponent() {
+	const {Authstate, setAuthstate} = useContext(AuthContext)
 
 	const Navigate = useNavigate()
 
@@ -26,21 +29,43 @@ export function HomeComponent({setAuthMode}) {
 						before.
 					</p>
 				</div>
-				<div className="h-10" />
-				<div className=" flex items-center justify-center mx-auto flex-1 max-w-[500px] max-sm:w-[300px] max-md:w-[300px] max-lg:w-[300px]">
-					<p onClick={() => {
-						setAuthMode("SignUp")
-						Navigate("/signup");
-					}} className="bg-green-500 border-[0.5px] animate-bounce hover:animate-none mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-green-500/70 cursor-pointer">
-						Sign Up
-					</p>
-					<p onClick={() => {
-						setAuthMode("SignIn")
-						Navigate("/signin")
-					}} className="bg-orange-500 border-[0.5px] animate-bounce hover:animate-none mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-orange-500/70 cursor-pointer">
-						Sign In
-					</p>
-				</div>
+
+				<div className="h-8" />
+				
+				{!Authstate ? (
+					<div className=" flex items-center justify-center mx-auto flex-1 max-w-[500px] max-sm:w-[300px] max-md:w-[300px] max-lg:w-[300px]">
+						<p onClick={() => {
+							Navigate("/signup");
+						}} className="bg-green-500 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-green-500/70 cursor-pointer">
+							Sign Up
+						</p>
+						<p onClick={() => {
+							Navigate("/signin")
+						}} className="bg-orange-500 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-orange-500/70 cursor-pointer">
+							Sign In
+						</p>
+					</div>
+				) : (
+					<div className=" flex items-center justify-center mx-auto flex-1 max-w-[500px] max-sm:w-[300px] max-md:w-[300px] max-lg:w-[300px]">
+						<p onClick={() => {
+							Navigate("/tasks");
+						}} className="bg-blue-600 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-blue-600/70 cursor-pointer">
+							Tasks
+						</p>
+						<p onClick={() => {
+							axios.get("/signout").then((res) => {
+								console.log(res.data)
+								if (res.status == 200){
+									localStorage.setItem("Authstate", false)
+									setAuthstate(false)
+								}
+							})
+							Navigate("/")
+						}} className="bg-red-500 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-red-500/70 cursor-pointer">
+							Sign Out
+						</p>
+					</div>
+				)}
 			</div>
 		</div>
 	);

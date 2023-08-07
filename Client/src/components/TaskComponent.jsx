@@ -86,21 +86,40 @@ export const TaskComponent = () => {
 	useEffect(() => {
 		if (Refetch) {
 
-			axios.get("/fetch").then((res) => ((res.data).Message).Data).then((res) => 
-				{
-					// This is to check if the data is changed or not so as to not cause latency issues
+			let res = TokenRefresh("/fetch")
+			res.then((res) => {
+				console.log(res)
+				if( res["status"] === "success"){
+					res = res["data"]["Message"]["Data"]
 					if(!isEqual(Tasks,res)){
 						setTasks(res)
 					}
 					setFetched(true);
 					setRefetch(false);
-				})
-				.catch((error) => {
+				} else {
 					setErrorStatus(true)
-					console.error(error)
-				});
+					console.error(res.data)
+				}
+			})
+			
+
+			// axios.get("/fetch").then((res) => ((res.data).Message).Data).then((res) => 
+			// 	{
+			// 		// This is to check if the data is changed or not so as to not cause latency issues
+			// 		if(!isEqual(Tasks,res)){
+			// 			setTasks(res)
+			// 		}
+			// 		setFetched(true);
+			// 		setRefetch(false);
+			// 	})
+			// 	.catch((error) => {
+			// 		setErrorStatus(true)
+			// 		console.error(error)
+			// 	});
 		}
 	}, [Refetch]);
+
+
 
 	// ? =======================================================
 
@@ -164,6 +183,64 @@ export const TaskComponent = () => {
 
 	// **********************************************************************************************
 
+	function TokenRefresh(Request, Method="GET", Payload){
+		if (Method === "POST"){
+			console.warn("POST")
+			const Headers = {
+				headers : {
+					"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+				}
+			}
+
+			axios.post(Request, Payload, Headers).then((res) => {
+				if (res.status === 401){
+					axios.get("/refresh").then(() => {
+						axios.post(Request, Payload, Headers).then((res) => {
+							return res
+						})
+					})
+				}
+				else{
+					return res
+				}
+			})
+		} 
+		
+		else {
+			console.warn("GET")
+			axios.get(Request).then((res) => {
+				console.warn(res)
+				if (res.status === 401){
+					axios.get("/refresh").then((res) => {
+						console.warn("Refresh Done")
+						try {
+							axios.get(Request).then((res) => {
+								return new Promise((resolve) => {
+									resolve({
+										status : "success",
+										data : res
+									})
+								})
+							})
+						} catch (error) {
+							return new Promise((resolve) => {
+								resolve({
+									status : "failed",
+									data : error
+								})
+							})
+						}
+					})
+				}
+				else {
+					return new Promise((resolve) => {
+						resolve(res)
+					})
+				}
+			})
+		}
+	}
+
 	// This is for submitting the task after typing the in the Add task div
 	// when clicked it first adds the task locally and then when task update signal received from the
 	// backend the whole data is refetched so as to not have any latency issues
@@ -180,17 +257,24 @@ export const TaskComponent = () => {
 				AddTaskRef.current.style.outline = "none";
 				console.log(Heading);
 
-				axios.post("/new",{
-					Heading: Heading,
-					Pinned: false,
-					Color: CurrentColor
-				},{
-					headers : {
-						"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-					},
-				}).then((res) => res.data).then((res) => {
-					console.log(res, "Inserted")
-				});
+				(async () => {
+					let res = await TokenRefresh("/new","POST",{
+						Heading: Heading,
+						Pinned: false,
+						Color: CurrentColor
+					})
+					console.log(res.data)
+				})()
+				
+				// axios.post("/new",{
+				// 	Heading: Heading,
+				// 	Pinned: false,
+				// 	Color: CurrentColor
+				// },{
+				// 	headers : {
+				// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+				// 	},
+				// }).then((res) => console.log(res.data))
 
 				setAddTask(false);
 				//  Adding the new task locally
@@ -224,18 +308,26 @@ export const TaskComponent = () => {
 			// If all the checklist items are not empty then we add the task to the db and locally
 			if (CheckListCount === CheckListItems.length){
 				
-				axios.post("/new",{
-					Contents: CheckListItems,
-					Pinned: false,
-					Type: "CheckList",
-					Color: CurrentColor
-				},{
-					headers : {
-						"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-					},
-				}).then((res) => res.data).then((res) => {
-					console.log(res, "Inserted")
-				});
+				(async () => {
+					let res = await TokenRefresh("/new","POST",{
+						Contents: CheckListItems,
+						Pinned: false,
+						Type: "CheckList",
+						Color: CurrentColor
+					})
+					console.log(res.data)
+				})()
+
+				// axios.post("/new",{
+				// 	Contents: CheckListItems,
+				// 	Pinned: false,
+				// 	Type: "CheckList",
+				// 	Color: CurrentColor
+				// },{
+				// 	headers : {
+				// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+				// 	},
+				// }).then((res) => console.log(res.data))
 
 				setAddTask(false);
 				setCheckListItems([{Heading: "",Checked: false}])
@@ -262,11 +354,16 @@ export const TaskComponent = () => {
 	// This is to delete the task from the DB
 	function DeleteTask(data) {
 
-		axios.post("/delete",data,{
-			headers : {
-				"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-			},
-		}).then((res) => console.log(res.data))
+		(async () => {
+			let res = await TokenRefresh("/delete","POST",data)
+			console.log(res.data)
+		})()
+
+		// axios.post("/delete",data,{
+		// 	headers : {
+		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+		// 	},
+		// }).then((res) => console.log(res.data))
 
 		// After deleting, inorder for fast update we are removing the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
@@ -279,14 +376,22 @@ export const TaskComponent = () => {
 	// This is to undo the last delete action
 	function UndoTask(){
 
-		axios.post("/new",{
-			Heading: DeletedTasks[0].Heading,
-			Pinned: DeletedTasks[0].Pinned,
-		},{
-			headers : {
-				"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-			},
-		}).then((res) => console.log(res.data))
+		(async () => {
+			let res = await TokenRefresh("/new","POST",{
+				Heading: DeletedTasks[0].Heading,
+				Pinned: DeletedTasks[0].Pinned,
+			})
+			console.log(res.data)
+		})()
+
+		// axios.post("/new",{
+		// 	Heading: DeletedTasks[0].Heading,
+		// 	Pinned: DeletedTasks[0].Pinned,
+		// },{
+		// 	headers : {
+		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+		// 	},
+		// }).then((res) => console.log(res.data))
 
 		setTasks((prev) => [...prev,DeletedTasks[0]])
 		setDeleteModelStatus(false)
@@ -299,14 +404,22 @@ export const TaskComponent = () => {
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
 	function UpdateTask(ModifiedItem, OriginalItem, index) {
 
-		axios.post("/update",{
-			OriginalItem: OriginalItem,
-			ModifiedItem: ModifiedItem,
-		},{
-			headers : {
-				"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-			},
-		}).then((res) => console.log(res.data))
+		(async () => {
+			let res = TokenRefresh("/update","POST",{
+				OriginalItem: OriginalItem,
+				ModifiedItem: ModifiedItem,
+			})
+			console.log(res.data)
+		})
+
+		// axios.post("/update",{
+		// 	OriginalItem: OriginalItem,
+		// 	ModifiedItem: ModifiedItem,
+		// },{
+		// 	headers : {
+		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
+		// 	},
+		// }).then((res) => console.log(res.data))
 
 		// After updating, inorder for fast update we are updating the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
@@ -504,7 +617,6 @@ export const TaskComponent = () => {
 									<i onClick={() => {setCurrentColor("#232323")}} className="fas fa-ban text-white/50 group-hover:text-white/100"></i>
 								</div>
 								<HuePicker color={CurrentColor} onChange={(color) => {
-									console.log(color.hex)
 									setCurrentColor(color.hex)
 								}}/>
 							</div>

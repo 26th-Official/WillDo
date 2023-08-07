@@ -3,7 +3,7 @@ import axios from "../../Modules/axios";
 import { HeaderComponent } from "../../Components/AdditionalComponents";
 import { useNavigate } from "react-router-dom";
 
-const SignupComponent = ({setAuthMode}) => {
+const SignupComponent = () => {
 
 	const [AuthData, setAuthData] = useState({
 		Username: "",
@@ -44,10 +44,18 @@ const SignupComponent = ({setAuthMode}) => {
                     FirstName : "",
                     LastName : ""
                 })
-				setAuthMode("SignIn")
                 Navigate("/signin")
             }
         })
+    }
+
+	function KeyPress(e,Index) {
+        // This is to move to next textfield when enter is pressed
+        if (e.key === "Enter"){
+            e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
+            AuthRef.current[Index].focus()
+        }
+
     }
 
 	return (
@@ -189,7 +197,7 @@ const SignupComponent = ({setAuthMode}) => {
 							Password: AuthRef.current[3].value,
 						};
 						console.warn(UserData);
-						Authentication("SignUp", UserData);
+						Authentication(UserData);
 					}}
 					className={`${
 						Loading && "!bg-green-500/70 cursor-not-allowed"
@@ -218,7 +226,6 @@ const SignupComponent = ({setAuthMode}) => {
 							LastName: "",
 						});
 						setErrorMessage("");
-						setAuthMode("SignIn");
 						Navigate("/signin");
 					}}
 					className="group text-sm pl-1 items-center inline-flex hover:border-b hover:animate-pulse cursor-pointer">

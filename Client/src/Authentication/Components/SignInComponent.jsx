@@ -1,9 +1,13 @@
-import React, { useState, useRef } from "react";
-import axios from "../../Modules/axios";
-import { HeaderComponent } from "../../Components/AdditionalComponents";
+import React, { useState, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "../../Modules/axios";
 
-const SignInComponent = ({setAuthMode}) => {
+import { HeaderComponent } from "../../Components/AdditionalComponents";
+import AuthContext from "./AuthContext";
+
+const SignInComponent = () => {
+	const {Authstate, setAuthstate} = useContext(AuthContext)
+
 	const [AuthData, setAuthData] = useState({
 		Username: "",
 		Password: "",
@@ -43,18 +47,27 @@ const SignInComponent = ({setAuthMode}) => {
 					Username: "",
 					Password: "",
 				});
-				setAuthMode("Tasks")
-				Navigate("/tasks");
+				setAuthstate(true)
+				Navigate("/tasks",{replace:true});
 			}
 		});
 	}
+
+	function KeyPress(e,Index) {
+        // This is to move to next textfield when enter is pressed
+        if (e.key === "Enter"){
+            e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
+            AuthRef.current[Index].focus()
+        }
+
+    }
 
 	return (
 		<div className="flex flex-col items-center">
 			<HeaderComponent />
 			<div className="h-4" />
 			<div
-				className={`bg-primary p-5 w-[350px] flex flex-col items-center rounded-md border my-5`}>
+				className={`bg-primary p-5 w-[350px]  max-sm:w-[300px] flex flex-col items-center rounded-md border my-5`}>
 				{ErrorMessage !== "" && (
 					<div className="w-full">
 						<div className="flex items-center rounded-md p-2 bg-red-500">
@@ -142,7 +155,7 @@ const SignInComponent = ({setAuthMode}) => {
 							Password: AuthRef.current[1].value,
 						};
 						console.warn(UserData);
-						Authentication("SignIn", UserData);
+						Authentication(UserData);
 					}}
 					className={`${
 						Loading && "!bg-green-500/70 !cursor-not-allowed"
@@ -169,7 +182,6 @@ const SignInComponent = ({setAuthMode}) => {
 							Password: "",
 						});
 						setErrorMessage("");
-						setAuthMode("SignUp")
 						Navigate("/signup");
 					}}
 					className="group text-sm pl-1 items-center inline-flex hover:border-b hover:animate-pulse cursor-pointer">

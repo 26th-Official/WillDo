@@ -5,13 +5,18 @@ import AuthContext from "../Authentication/Components/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export function MenubarComponent({setMenuBarStatus}) {
-	const {AuthState, setAuthState} = useContext(AuthContext)
+	const {Authstate, setAuthstate} = useContext(AuthContext)
 
     let Navigate = useNavigate()
 	function SignOut(){
-		axios.get("/signout").then((res) => {console.log(res.data)})
-		setAuthState(true)
-		Navigate("/")
+		axios.get("/signout").then((res) => {
+			console.log(res.data)
+			if (res.status == 200){
+				localStorage.setItem("Authstate", false)
+				setAuthstate(false)
+				Navigate("/")
+			}
+		})
 	}
 
 	return (

@@ -1,6 +1,6 @@
 # Importing the required modules
 
-from flask import Flask, jsonify, request,make_response
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 # For realtime updation of data
@@ -8,15 +8,16 @@ from flask_socketio import SocketIO
 
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token,set_refresh_cookies,\
                                 set_access_cookies,unset_access_cookies,unset_refresh_cookies,\
-                                get_jwt,create_refresh_token,decode_token
+                                create_refresh_token,decode_token,get_jwt_identity,get_jwt
+                                
 
 # =====================================
 
 # This is to handle the object id in mongo db since it is not json serializable
 from bson.objectid import ObjectId
 
-import bcrypt
-import datetime
+from bcrypt import gensalt,hashpw,checkpw
+from datetime import timedelta,timezone,datetime
 
 # =====================================
 # For accessing the Mongo DB
@@ -41,8 +42,8 @@ CORS(app, supports_credentials=True)
 # socketio = SocketIO(app,cors_allowed_origins="*",cors_credentials=True)
 
 app.config["JWT_SECRET_KEY"] = '846465498464987646sdf546548sd4651sfadf4as654fd'
-# app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=1)
-# app.config["JWT_REFRESH_TOKEN_EXPIRES"] = datetime.timedelta(minutes=2)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=5)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_COOKIE_SECURE'] = True
@@ -145,32 +146,13 @@ def Fetch():
     return response,200
 
 # !================= Authentication ===================================
-@app.before_request
-def CheckAccess():
-    try:
-        Refresh_Token = decode_token(request.cookies.get("refresh_token_cookie"))
-        Access_Token = decode_token(request.cookies.get("access_token_cookie"))
-        print("=================")
-        
-        print(Refresh_Token,Access_Token)
-    except Exception as e:
-        print('An exception occurred',e)
-    pass
 
-@jwt.expired_token_loader
-def expired_token_callback(*kargs):
-    
-    print("*********************")
-    print("Yessss")
-    print(get_jwt())
-    print(kargs[1])
-    return jsonify({"Status" : "denied",})
 
 @app.route("/signup",methods=["POST"])
 def SignUp():
     data = request.get_json()
     print(data)
-    HashedPassword = bcrypt.hashpw(data["Password"].encode("utf-8"),bcrypt.gensalt())
+    HashedPassword = hashpw(data["Password"].encode("utf-8"),gensalt())
     if User_Collection.find_one({"Username" : data["Username"]}) != None:
         response = jsonify({"Message" : {
             "Status" : "denied",
@@ -200,7 +182,7 @@ def SignIn():
         }})
         return response,404
     
-    if not bcrypt.checkpw(data["Password"].encode("utf-8"),user_result["Password"]):
+    if not checkpw(data["Password"].encode("utf-8"),user_result["Password"]):
         response = jsonify({"Message" : {
             "Status" : "success",
             "Operation" : "Wrong Credentials",
@@ -216,6 +198,16 @@ def SignIn():
     set_access_cookies(response,access_token)
     set_refresh_cookies(response,refresh_token)
     return response,200
+
+@app.route("/refresh")
+@jwt_required(refresh=True,verify_type=True)
+def TokenRefresh():
+    response = jsonify({"Message" : {
+        "Status" : "success",
+    }})
+    access_token = create_access_token(identity={"Username" : get_jwt_identity()})
+    set_access_cookies(response,access_token)
+    return response
 
 
 @app.route("/signout")
