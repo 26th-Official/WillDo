@@ -1,31 +1,31 @@
 # Importing the required modules
 
+# =====================================
+# To make REST API
 from flask import Flask, jsonify, request
+
+# To Handle Cross-Site Requests
 from flask_cors import CORS
 
-# For realtime updation of data
-from flask_socketio import SocketIO
-
+# To Handle Token based Authentication
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token,set_refresh_cookies,\
                                 set_access_cookies,unset_access_cookies,unset_refresh_cookies,\
-                                create_refresh_token,decode_token,get_jwt_identity,get_jwt
+                                create_refresh_token,get_jwt_identity
                                 
-
 # =====================================
-
 # This is to handle the object id in mongo db since it is not json serializable
 from bson.objectid import ObjectId
 
+# To Hash the Password before storing in Database
 from bcrypt import gensalt,hashpw,checkpw
-from datetime import timedelta,timezone,datetime
 
+# To handle date and time
+from datetime import timedelta
 # =====================================
 # For accessing the Mongo DB
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-
-# for multithreading purpose
-from threading import Thread
+# =====================================
 
 # ?====================================================
 
@@ -36,41 +36,24 @@ db = client["Data"]
 collection = db["UserData"]
 User_Collection = db["Users"]
 
-# Initializing Flask and Socket with CORS
+# Initializing Flask with CORS
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
-# socketio = SocketIO(app,cors_allowed_origins="*",cors_credentials=True)
+# Initializing the JWT
+jwt = JWTManager(app)
 
+# Flask Variables for Flask-JWT
 app.config["JWT_SECRET_KEY"] = '846465498464987646sdf546548sd4651sfadf4as654fd'
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=5)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=10)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=1)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_COOKIE_SECURE'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
 
-jwt = JWTManager(app)
 
 
-
-# ?====================================================
-
-# This is for the checking the logs in DB for the purpose of sending signal to frontend
-DB_CheckPipeline = [{"$match" : {
-    "operationType" : {
-        "$in" : ["insert","update","replace","delete"]
-    }
-}}]
-
-# This is for the checking the logs in DB for the purpose of sending signal to frontend
-# def DB_Update():
-#     print("============Process Started=============")
-#     with collection.watch(DB_CheckPipeline) as stream:
-#         for update in stream:
-#             print("============ DB Updated ============")
-#             socketio.emit("DB_Update")
-
-# ?====================================================
+# *===================CRUD Operations=================================
 
 # This is to inset data into DB
 @app.route("/new", methods=["POST"])
@@ -79,7 +62,7 @@ def PostData():
     data = request.get_json()
     print(data)
     PostResult = collection.insert_one(data)
-    # socketio.emit("DB_Update")
+
     response = jsonify({"Message" : {
         "Status" : "success",
         "Operation" : "Task Added"
@@ -95,7 +78,7 @@ def DeleteData():
     data["_id"] = ObjectId(data["_id"])
     print(data)
     collection.delete_one({"_id":  data["_id"]})
-    # socketio.emit("DB_Update")
+
     response = jsonify({"Message" : {
         "Status" : "success",
         "Operation" : "Task Deleted"
@@ -110,21 +93,26 @@ def UpdateData():
     data = request.get_json()
     OriginalItem = data["OriginalItem"]
     ModifiedItem = data["ModifiedItem"]
-
-    OriginalItem["_id"] = ObjectId(OriginalItem["_id"])
-    ModifiedItem["_id"] = ObjectId(ModifiedItem["_id"])
-    
-    ModifiedItem = {"$set" : ModifiedItem}
-    # print({"_id":  OriginalItem["_id"]},ModifiedItem)
-    print(OriginalItem,ModifiedItem)
-    
-    collection.update_many({"_id":  OriginalItem["_id"]},ModifiedItem)
-    # socketio.emit("DB_Update")
     
     response = jsonify({"Message" : {
         "Status" : "success",
         "Operation" : "Task Updated"
     }})
+    
+    if OriginalItem == ModifiedItem:
+        return response,200
+
+    try:
+        OriginalItem["_id"] = ObjectId(OriginalItem["_id"])
+        ModifiedItem["_id"] = ObjectId(ModifiedItem["_id"])
+        ModifiedItem = {"$set" : ModifiedItem}
+        print(OriginalItem, ModifiedItem)
+        collection.update_many({"_id":  OriginalItem["_id"]},ModifiedItem)
+        
+    except KeyError:
+        ModifiedItem = {"$set" : ModifiedItem}
+        collection.update_many(OriginalItem,ModifiedItem)
+      
     return response,200
 
 
@@ -145,9 +133,11 @@ def Fetch():
     }})
     return response,200
 
+# *====================================================================
+
 # !================= Authentication ===================================
 
-
+# This is to Handle the Signup Process
 @app.route("/signup",methods=["POST"])
 def SignUp():
     data = request.get_json()
@@ -169,7 +159,7 @@ def SignUp():
     return response,200
         
   
-
+# This is to Handle the SignIn Process
 @app.route("/signin",methods=["POST"])
 def SignIn():
     data = request.get_json()
@@ -199,6 +189,8 @@ def SignIn():
     set_refresh_cookies(response,refresh_token)
     return response,200
 
+
+# This is to get new Refresh Tokens
 @app.route("/refresh")
 @jwt_required(refresh=True,verify_type=True)
 def TokenRefresh():
@@ -210,6 +202,7 @@ def TokenRefresh():
     return response
 
 
+# This is to signout and unset both the Access and Refresh Token
 @app.route("/signout")
 def SignOut():
     response = jsonify({"Message" : {
@@ -223,17 +216,16 @@ def SignOut():
 
 # !====================================================================
 
+# ?========================== Setting =================================
 
+@app.route('/settings')
+def Settings():
+    pass
 
-# ?====================================================
+# ?====================================================================
 
 
 if __name__ == '__main__':
-    # we are starting the DB_Update function in a thread to avoid blocking of the main thread
-    # Task1 = Thread(target=DB_Update)
-    # Task1.start()
-    
     # Now we are starting the server
     app.run(port=6565)
-    # socketio.run(app,port=6565,debug=False)
 

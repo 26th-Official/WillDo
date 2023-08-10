@@ -1,5 +1,8 @@
-import React from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "../Modules/axios";
+
+import AuthContext from "../Authentication/Components/AuthContext";
 
 export function DeleteTaskModal({UndoTask}) {
 	return (
@@ -11,25 +14,87 @@ export function DeleteTaskModal({UndoTask}) {
 	</div>
 )}
 
-export function ErrorPageComponent({}) {
-	return (
-		<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
-			<div>
-				<b>Something's Wrong !!</b>
+export function ErrorModal({ErrorType}) {
+	const {Authstate, setAuthstate} = useContext(AuthContext)
+	const Navigate = useNavigate()
+
+	function SignOut(){
+		axios.get("/signout").then((res) => {
+			console.log(res.data)
+			if (res.status == 200){
+				localStorage.setItem("Authstate", false)
+				setAuthstate(false)
+				Navigate("/")
+			}
+		})
+	}
+
+	if (ErrorType === 500){
+		return (
+			<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
+				<div>
+					<b>Something's Wrong !!</b>
+				</div>
+				<div>
+					Try Again Later or Click here
+					<i // THis for refreshing the page
+						onClick={() => location.reload()}
+						className="fas fa-arrow-rotate-right px-1 cursor-pointer hover:text-green-300 hover:animate-pulse"
+						aria-hidden="true"></i>
+					to refresh
+				</div>
 			</div>
-			<div>
-				Try Again Later or Click here
-				<i // THis for refreshing the page
-					onClick={() => location.reload()}
-					className="fas fa-arrow-rotate-right px-1 cursor-pointer hover:text-green-300 hover:animate-pulse"
-					aria-hidden="true"></i>
-				to refresh
+		);
+	}
+
+	else if (ErrorType === 401){
+		const [RemainingTime, setRemainingTime] = useState(5)
+		useEffect(() => {
+			if (RemainingTime === 0){
+				SignOut()
+			} else {
+				setInterval(() => {
+					setRemainingTime(RemainingTime - 1)
+				},[1000])
+			}
+		},[RemainingTime])
+		return (
+			<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
+				<div>
+					<b>Session Expired !!</b>
+				</div>
+				<div>
+					Please Re-Authenticate by Clicking here
+					<i // THis for refreshing the page
+						onClick={SignOut}
+						className="fas fas fa-power-off px-1 cursor-pointer hover:text-red-300 hover:animate-pulse"
+						aria-hidden="true"></i>
+					or Automatically in <span className="animate-pulse">{RemainingTime}</span> Seconds
+				</div>
 			</div>
-		</div>
-	);
+		);
+	}
+
+	if (ErrorType === 503){
+		return (
+			<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
+				<div>
+					<b>No Internet Connection !!</b>
+				</div>
+				<div>
+					Try Again Later or Click here
+					<i // THis for refreshing the page
+						onClick={() => location.reload()}
+						className="fas fa-arrow-rotate-right px-1 cursor-pointer hover:text-green-300 hover:animate-pulse"
+						aria-hidden="true"></i>
+					to refresh
+				</div>
+			</div>
+		);
+	}
 }
 
-export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, setEditCheckBoxTask, setCheckListItems, index, DeleteTask }) {
+export function TaskOptions({ setCurrentColor, CustomClass, setEditTask, setEditTaskValue, item, setEditCheckBoxTask, setCheckListItems, index, DeleteTask }) {
 	return (
 		<div className={`${CustomClass} hidden m-[-40px] group-hover:flex flex-col items-center justify-around text-background bg-white w-10`}>
 			<i
@@ -42,6 +107,7 @@ export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, 
 							Index: index,
 							OriginalItem: item,
 						})
+						setCurrentColor(item.Color)
 					} else {
 						// This is to set the EditTask state to true to open the editting page
 						setEditTask(true); // The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
@@ -51,6 +117,7 @@ export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, 
 							ModifiedItem: { ...item },
 							Index: index,
 						});
+						setCurrentColor(item.Color)
 					}
 				}}
 				className="fas fa-pen p-1 hover:text-orange-400"></i>
@@ -62,7 +129,6 @@ export function TaskOptions({ CustomClass, setEditTask, setEditTaskValue, item, 
 }
 
 export function HeaderComponent(){
-	
 	const Navigate = useNavigate()
 
 	return (

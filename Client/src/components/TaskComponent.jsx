@@ -4,18 +4,19 @@ import axios from "../Modules/axios";
 // for realtime data fetching from backend
 import io from "socket.io-client";
 
-import { omit, isEqual } from "lodash";
+import { omit, isEqual, set } from "lodash";
 
 import { HuePicker } from 'react-color';
 
 // Custom Components
-import { DeleteTaskModal, ErrorPageComponent, TaskOptions } from './AdditionalComponents';
+import { DeleteTaskModal, ErrorModal, TaskOptions } from './AdditionalComponents';
 import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
 
 // **********************************************************************************************
 
 export const TaskComponent = () => {
+	const [isInternet,setisInternet] = useState(navigator.onLine)
 	// =======================================================
 	// let access_token = document.cookie.split(";").find((item) => item.startsWith("access_token")).split("=")[1]
 	// to store the tasks from db
@@ -65,8 +66,13 @@ export const TaskComponent = () => {
 	// =======================================================
 	// It indicates whether the menu bar is visible or not
 	const [MenuBarStatus, setMenuBarStatus] = useState(false) 
+	
 	// This is for the error page it will be "true" if there is any problem in data fetching from backend
-	const [ErrorStatus, setErrorStatus] = useState(false)
+	const DefaultError = {
+		Status: false,
+		Type: 0
+	}
+	const [Error, setError] = useState(DefaultError)
 	// =======================================================
 
 	// **********************************************************************************************
@@ -81,27 +87,71 @@ export const TaskComponent = () => {
 	// **********************************************************************************************
 
 	// ? =======================================================
+
+	useEffect(() => {
+		if (Tasks.length === 0 && !navigator.onLine){
+			setError({
+				Status: true,
+				Type: 503
+			})
+		}
+		else if (Tasks.length === 0 && navigator.onLine){
+			setError(DefaultError)
+			setRefetch(true)	
+		}
+	},[isInternet])
+
+	// ? =======================================================
+	// To check if the user's internet is online or offline
+	useEffect(() => {
+		window.addEventListener("online",(() => {
+			setisInternet(true)
+			console.log(`Internet Connection is ${navigator.onLine ? "Online" : "Offline"}`)
+		}))
+		window.addEventListener("offline",(() => {
+			setisInternet(false)
+			console.log(`Internet Connection is ${navigator.onLine ? "Online" : "Offline"}`)
+		}))
+
+		return () => {
+			window.removeEventListener("online",(() => {setisInternet(true)}))
+			window.removeEventListener("offline",(() => {setisInternet(false)}))
+		}
+	},[])
+
+	// ? =======================================================
 	
 	// for fetching the data from db for first time and as well as when updated
 	useEffect(() => {
 		if (Refetch) {
 
-			let res = TokenRefresh("/fetch")
-			res.then((res) => {
-				console.log(res)
-				if( res["status"] === "success"){
+			(async () => {
+				await TokenRefresh("/fetch").then((res) => 
+				{
 					res = res["data"]["Message"]["Data"]
 					if(!isEqual(Tasks,res)){
 						setTasks(res)
 					}
 					setFetched(true);
 					setRefetch(false);
-				} else {
-					setErrorStatus(true)
-					console.error(res.data)
-				}
-			})
-			
+					setError(DefaultError)
+
+				}).catch((error) => {
+					if (error.status === 401){
+						setError({
+							Status: true,
+							Type: 401
+						})
+						console.error(error)
+					} else {
+						setError({
+							Status: true,
+							Type: 500
+						})
+						console.error(error)
+					}
+				})
+			})()
 
 			// axios.get("/fetch").then((res) => ((res.data).Message).Data).then((res) => 
 			// 	{
@@ -111,15 +161,32 @@ export const TaskComponent = () => {
 			// 		}
 			// 		setFetched(true);
 			// 		setRefetch(false);
-			// 	})
-			// 	.catch((error) => {
-			// 		setErrorStatus(true)
-			// 		console.error(error)
+
+			// 	}).catch((error) => {
+			// 		console.clear()
+			// 		if (error.response.status === 401){
+			// 			axios.get("/refresh").then(() => {
+			// 				axios.get("/fetch").then((res) => ((res.data).Message).Data).then((res) => 
+			// 					{
+			// 						// This is to check if the data is changed or not so as to not cause latency issues
+			// 						if(!isEqual(Tasks,res)){
+			// 							setTasks(res)
+			// 						}
+			// 						setFetched(true);
+			// 						setRefetch(false);
+			// 					})
+			// 					.catch((error) => {
+			// 						setFetched(true)
+			// 						setError(true)
+			// 					});
+			// 			}).catch(() => {
+			// 				setFetched(true)
+			// 				setError(true)
+			// 			})
+			// 		}
 			// 	});
 		}
 	}, [Refetch]);
-
-
 
 	// ? =======================================================
 
@@ -136,6 +203,7 @@ export const TaskComponent = () => {
 	// 		socketio.disconnect();
 	// 	};
 	// });
+
 
 	// ? =======================================================
 
@@ -177,69 +245,69 @@ export const TaskComponent = () => {
 			setColorPickerState(false)
 			setCurrentColor("#232323")
 		}
+
 	},[EditTask,AddTask])
 
 	// ? =======================================================
 
 	// **********************************************************************************************
 
-	function TokenRefresh(Request, Method="GET", Payload){
-		if (Method === "POST"){
-			console.warn("POST")
-			const Headers = {
-				headers : {
-					"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-				}
-			}
-
-			axios.post(Request, Payload, Headers).then((res) => {
-				if (res.status === 401){
-					axios.get("/refresh").then(() => {
-						axios.post(Request, Payload, Headers).then((res) => {
-							return res
-						})
-					})
-				}
-				else{
-					return res
-				}
-			})
-		} 
+	function TokenRefresh(Request, Method="GET", Payload={}){
+		return new Promise((myresolve,myreject) => {
+			if (Method === "POST"){
 		
-		else {
-			console.warn("GET")
-			axios.get(Request).then((res) => {
-				console.warn(res)
-				if (res.status === 401){
+				axios.post(Request, Payload, {
+					headers : {
+						"Content-Type" : "application/json",
+						"X-CSRF-TOKEN" : (document.cookie).split(";")[1].split("=")[1]
+					}
+				}).then((res) => {
+					myresolve(res)
+				}).catch((error) => {
+					axios.get("/refresh").then(() => {
+						console.warn("Refresh Done")
+						try {
+							axios.post(Request, Payload, {
+								headers : {
+									"Content-Type" : "application/json",
+									"X-CSRF-TOKEN" : (document.cookie).split(";")[1].split("=")[1]
+								}
+							}).then((res) => {
+								myresolve(res)
+							})
+						} catch (error) {
+							if (error.response.status === 401){
+								myreject(error.response)
+							}
+						}
+					})
+				})
+			} 
+			
+			else {
+				axios.get(Request).then((res) => {
+					myresolve(res)
+				}).catch((error) => {
 					axios.get("/refresh").then((res) => {
 						console.warn("Refresh Done")
 						try {
 							axios.get(Request).then((res) => {
-								return new Promise((resolve) => {
-									resolve({
-										status : "success",
-										data : res
-									})
-								})
+								myresolve(res)
 							})
 						} catch (error) {
-							return new Promise((resolve) => {
-								resolve({
-									status : "failed",
-									data : error
-								})
-							})
+							myreject(error)
+						}
+					}).catch((error) => {
+						if (error.response.status === 401){
+							myreject(error.response)
 						}
 					})
-				}
-				else {
-					return new Promise((resolve) => {
-						resolve(res)
-					})
-				}
-			})
-		}
+				})
+			}
+		})
 	}
+
+	// **********************************************************************************************
 
 	// This is for submitting the task after typing the in the Add task div
 	// when clicked it first adds the task locally and then when task update signal received from the
@@ -255,17 +323,30 @@ export const TaskComponent = () => {
 				AddTaskRef.current.style.outline = "0.7px solid rgb(239,68,68)";
 			} else {
 				AddTaskRef.current.style.outline = "none";
-				console.log(Heading);
 
 				(async () => {
-					let res = await TokenRefresh("/new","POST",{
+					await TokenRefresh("/new","POST",{
 						Heading: Heading,
 						Pinned: false,
 						Color: CurrentColor
+					}).then((res) => console.log(res.data))
+					.catch((error) => {
+						if (error.status === 401){
+							setError({
+								Status: true,
+								Type: 401
+							})
+							console.error(error)
+						} else {
+							setError({
+								Status: true,
+								Type: 500
+							})
+							console.error(error)
+						}
 					})
-					console.log(res.data)
 				})()
-				
+
 				// axios.post("/new",{
 				// 	Heading: Heading,
 				// 	Pinned: false,
@@ -307,17 +388,37 @@ export const TaskComponent = () => {
 			
 			// If all the checklist items are not empty then we add the task to the db and locally
 			if (CheckListCount === CheckListItems.length){
-				
+				console.log({
+					Contents: CheckListItems,
+					Pinned: false,
+					Type: "CheckList",
+					Color: CurrentColor
+				});
+
 				(async () => {
-					let res = await TokenRefresh("/new","POST",{
+					await TokenRefresh("/new","POST",{
 						Contents: CheckListItems,
 						Pinned: false,
 						Type: "CheckList",
 						Color: CurrentColor
+					}).then((res) => console.log(res.data))
+					.catch((error) => {
+						if (error.status === 401){
+							setError({
+								Status: true,
+								Type: 401
+							})
+							console.error(error)
+						} else {
+							setError({
+								Status: true,
+								Type: 500
+							})
+							console.error(error)
+						}
 					})
-					console.log(res.data)
 				})()
-
+				
 				// axios.post("/new",{
 				// 	Contents: CheckListItems,
 				// 	Pinned: false,
@@ -355,8 +456,23 @@ export const TaskComponent = () => {
 	function DeleteTask(data) {
 
 		(async () => {
-			let res = await TokenRefresh("/delete","POST",data)
-			console.log(res.data)
+			await TokenRefresh("/delete","POST",data)
+			.then((res) => console.log(res.data))
+			.catch((error) => {
+				if (error.status === 401){
+					setError({
+						Status: true,
+						Type: 401
+					})
+					console.error(error)
+				} else {
+					setError({
+						Status: true,
+						Type: 500
+					})
+					console.error(error)
+				}
+			})
 		})()
 
 		// axios.post("/delete",data,{
@@ -377,11 +493,25 @@ export const TaskComponent = () => {
 	function UndoTask(){
 
 		(async () => {
-			let res = await TokenRefresh("/new","POST",{
+			await TokenRefresh("/new","POST",{
 				Heading: DeletedTasks[0].Heading,
 				Pinned: DeletedTasks[0].Pinned,
+			}).then((res) => console.log(res.data))
+			.catch((error) => {
+				if (error.status === 401){
+					setError({
+						Status: true,
+						Type: 401
+					})
+					console.error(error)
+				} else {
+					setError({
+						Status: true,
+						Type: 500
+					})
+					console.error(error)
+				}
 			})
-			console.log(res.data)
 		})()
 
 		// axios.post("/new",{
@@ -399,18 +529,31 @@ export const TaskComponent = () => {
 	}
 
 	// **********************************************************************************************
-	
 	// This is to update the task in the DB
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
 	function UpdateTask(ModifiedItem, OriginalItem, index) {
 
 		(async () => {
-			let res = TokenRefresh("/update","POST",{
+			await TokenRefresh("/update","POST",{
 				OriginalItem: OriginalItem,
 				ModifiedItem: ModifiedItem,
+			}).then((res) => console.log(res.data))
+			.catch((error) => {
+				if (error.status === 401){
+					setError({
+						Status: true,
+						Type: 401
+					})
+					console.error(error)
+				} else {
+					setError({
+						Status: true,
+						Type: 500
+					})
+					console.error(error)
+				}
 			})
-			console.log(res.data)
-		})
+		})()
 
 		// axios.post("/update",{
 		// 	OriginalItem: OriginalItem,
@@ -426,16 +569,17 @@ export const TaskComponent = () => {
 
 		const TasksCopy = JSON.parse(JSON.stringify(Tasks)); // We are making a deep copy of the Tasks state as don't want to share the same memory location
 		TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
-		setTasks(() => TasksCopy); // Now we are updating the Tasks state with the updated TasksCopy
+		console.warn(TasksCopy)
+		setTasks([...TasksCopy]); // Now we are updating the Tasks state with the updated TasksCopy
 	}
 
 	// **********************************************************************************************
 
-	function TaskDisplay({item, index, UpdateTask, setEditTask, setEditTaskValue, DeleteTask}) {
+	function TaskDisplay({item, index, UpdateTask, setEditTask, setEditTaskValue, DeleteTask, setCurrentColor}) {
 		if (item.Type === "CheckList") {
 			return (
 				<div className="flex group">
-					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 					<div className="flex-1 group-hover:max-sm:ml-5">
 						{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
 								<div onClick={() => {
@@ -449,15 +593,15 @@ export const TaskComponent = () => {
 							</div>
 						)}
 					</div>
-					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 				</div>
 			)
 		} else {
 			return (
 				<div className="flex justify-center">
-					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 					<p className="flex-1">{item.Heading}</p>
-					<TaskOptions setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 				</div>
 			)
 		}	
@@ -627,7 +771,7 @@ export const TaskComponent = () => {
 				{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Editing Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
 				{EditTask && (
-					<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
+					<div style={{backgroundColor : CurrentColor}} className={`bg-primary p-10 flex flex-col rounded-md border my-5`}>
 						{EditCheckBoxTask ? (
 							<div className="flex flex-col">
 								<div>
@@ -679,13 +823,18 @@ export const TaskComponent = () => {
 								
 								<br />
 								<div className="flex mx-auto">
+									<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
+										<img width={"25px"} src="/color_picker.png"/>
+									</div>
 									<div
-										onClick={() => {
-											delete CheckListItems.Index
+										onClick={() => {											
 											// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
+											CheckListItems.Color = CurrentColor
+											console.warn(CheckListItems)
 											UpdateTask(omit(CheckListItems,"Index","OriginalItem"), {_id : CheckListItems._id}, CheckListItems.Index)
 											// After updating the task we are setting the EditTask state to false to close the editing page
 											setEditTask(false)
+											setEditCheckBoxTask(false)
 											setCheckListItems([[{Heading: "",Checked: false}]])
 										}}
 										className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500">
@@ -708,6 +857,17 @@ export const TaskComponent = () => {
 											aria-hidden="true"></i>{" "}
 									</div>
 								</div>
+								<br />
+								{ColorPickerState && (
+									<div className="flex items-center space-x-3 mx-auto">
+										<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
+											<i onClick={() => {setCurrentColor("#232323")}} className="fas fa-ban text-white/50 group-hover:text-white/100"></i>
+										</div>
+										<HuePicker color={CurrentColor} onChange={(color) => {
+											setCurrentColor(color.hex)
+										}}/>
+									</div>
+								)}
 							</div>
 						) : (
 							<div className="flex flex-col">
@@ -743,8 +903,12 @@ export const TaskComponent = () => {
 									className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
 								<br />
 								<div className="flex mx-auto">
+									<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
+										<img width={"25px"} src="/color_picker.png"/>
+									</div>
 									<div
 										onClick={() => {
+											EditTaskValue["ModifiedItem"].Color = CurrentColor
 											// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
 											UpdateTask(EditTaskValue.ModifiedItem, EditTaskValue.OriginalItem, EditTaskValue.Index)
 											// After updating the task we are setting the EditTask state to false to close the editing page
@@ -768,6 +932,17 @@ export const TaskComponent = () => {
 											aria-hidden="true"></i>{" "}
 									</div>
 								</div>
+								<br />
+								{ColorPickerState && (
+									<div className="flex items-center space-x-3 mx-auto">
+										<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
+											<i onClick={() => {setCurrentColor("#232323")}} className="fas fa-ban text-white/50 group-hover:text-white/100"></i>
+										</div>
+										<HuePicker color={CurrentColor} onChange={(color) => {
+											setCurrentColor(color.hex)
+										}}/>
+									</div>
+								)}
 							</div>
 						)}
 					</div>
@@ -777,8 +952,8 @@ export const TaskComponent = () => {
 				{/* +++++++++++++++++++++++++++++++++++++++++++ Error Page +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
 				{/* The error page is displayed if there are anyproblem in fetching the tasks */}
-				{ErrorStatus ? (
-					<ErrorPageComponent />
+				{Error.Status ? (
+					<ErrorModal ErrorType={Error.Type} />
 				) : (
 
 					// +++++++++++++++++++++++++++++++++++++++++++++++++ Nothing Page and Loading Page +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -817,8 +992,10 @@ export const TaskComponent = () => {
 								{/* ++++++++++++++++++++++++++++++++++++++++ Pinned Tasks ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 								{Tasks.map((item, index) => 
 									<div key={index} style={{backgroundColor: item.Color}} className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
-										<TaskDisplay item={item} index={index}  UpdateTask={UpdateTask} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} DeleteTask={DeleteTask}  />
-									</div>)}
+										<TaskDisplay item={item} index={index} setCurrentColor={setCurrentColor} UpdateTask={UpdateTask} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} DeleteTask={DeleteTask}  />
+									</div>
+								)}
+
 							</>
 						)}
 					</div>
