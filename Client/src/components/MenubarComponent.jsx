@@ -23,6 +23,7 @@ export function MenubarComponent({setMenuBarStatus}) {
 			console.log(res.data)
 			if (res.status == 200){
 				localStorage.setItem("Authstate", false)
+				localStorage.setItem("UserID","")
 				setAuthstate(false)
 				Navigate("/")
 			}

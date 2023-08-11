@@ -18,11 +18,12 @@ export function ErrorModal({ErrorType}) {
 	const {Authstate, setAuthstate} = useContext(AuthContext)
 	const Navigate = useNavigate()
 
-	function SignOut(){
+	function SignOut({setAuthstate}){
 		axios.get("/signout").then((res) => {
 			console.log(res.data)
 			if (res.status == 200){
 				localStorage.setItem("Authstate", false)
+				localStorage.setItem("UserID","")
 				setAuthstate(false)
 				Navigate("/")
 			}
@@ -103,9 +104,9 @@ export function TaskOptions({ setCurrentColor, CustomClass, setEditTask, setEdit
 						setEditTask(true); // This is to set the EditTask state to true to open the editting page
 						setEditCheckBoxTask(true)
 						setCheckListItems({
-							...item,
+							...(JSON.parse(JSON.stringify(item))),
 							Index: index,
-							OriginalItem: item,
+							OriginalItem: JSON.parse(JSON.stringify(item)),
 						})
 						setCurrentColor(item.Color)
 					} else {
@@ -113,8 +114,8 @@ export function TaskOptions({ setCurrentColor, CustomClass, setEditTask, setEdit
 						setEditTask(true); // The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
 
 						setEditTaskValue({
-							OriginalItem: item,
-							ModifiedItem: { ...item },
+							OriginalItem: JSON.parse(JSON.stringify(item)),
+							ModifiedItem: JSON.parse(JSON.stringify(item)),
 							Index: index,
 						});
 						setCurrentColor(item.Color)

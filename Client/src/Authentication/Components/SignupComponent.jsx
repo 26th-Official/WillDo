@@ -164,7 +164,7 @@ const SignupComponent = () => {
 				</div>
 
 				<div className="h-3" />
-				<div
+				<button
 					onClick={() => {
 						setErrorMessage(Messages[0]);
 						if (
@@ -199,6 +199,8 @@ const SignupComponent = () => {
 						console.warn(UserData);
 						Authentication(UserData);
 					}}
+
+					disabled={Loading}
 					className={`${
 						Loading && "!bg-green-500/70 cursor-not-allowed"
 					} w-[100px] mx-1 h-[40px] bg-green-500 rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500/70`}>
@@ -210,7 +212,7 @@ const SignupComponent = () => {
 								: "fas fa-chevron-right"
 						} ml-1`}
 						aria-hidden="true"></i>{" "}
-				</div>
+				</button>
 			</div>
 			<div>
 				<p onClick={() => Navigate("/")} className="inline text-sm hover:border-b cursor-pointer hover:text-white/70">

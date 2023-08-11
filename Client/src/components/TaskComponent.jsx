@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "../Modules/axios";
+import Convert2Dict from "../Modules/Utility"
 
 // for realtime data fetching from backend
 import io from "socket.io-client";
@@ -12,11 +13,15 @@ import { HuePicker } from 'react-color';
 import { DeleteTaskModal, ErrorModal, TaskOptions } from './AdditionalComponents';
 import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
+import AuthContext from "../Authentication/Components/AuthContext";
 
 // **********************************************************************************************
 
 export const TaskComponent = () => {
+	// =======================================================
 	const [isInternet,setisInternet] = useState(navigator.onLine)
+	// =======================================================
+	const { UserID } = useContext(AuthContext)
 	// =======================================================
 	// let access_token = document.cookie.split(";").find((item) => item.startsWith("access_token")).split("=")[1]
 	// to store the tasks from db
@@ -24,6 +29,8 @@ export const TaskComponent = () => {
 
 	// its for displaying the div for typing new tasks
 	const [AddTask, setAddTask] = useState(false);
+	// This is to tell if the Add task button is clicked and to should display the loading animation
+	const [isAddTaskLoading, setisAddTaskLoading] = useState(false);
 	// =======================================================
 
 	const [ColorPickerState, setColorPickerState] = useState(false)
@@ -66,13 +73,15 @@ export const TaskComponent = () => {
 	// =======================================================
 	// It indicates whether the menu bar is visible or not
 	const [MenuBarStatus, setMenuBarStatus] = useState(false) 
-	
-	// This is for the error page it will be "true" if there is any problem in data fetching from backend
+	// =======================================================
+
+	// This is for the error modal it will be "true" ("Status") is there is any error and "Type" will be the error code
 	const DefaultError = {
 		Status: false,
 		Type: 0
 	}
 	const [Error, setError] = useState(DefaultError)
+
 	// =======================================================
 
 	// **********************************************************************************************
@@ -127,8 +136,8 @@ export const TaskComponent = () => {
 
 			(async () => {
 				await TokenRefresh("/fetch").then((res) => 
-				{
-					res = res["data"]["Message"]["Data"]
+				{	
+					res = res["data"]["Data"]
 					if(!isEqual(Tasks,res)){
 						setTasks(res)
 					}
@@ -153,7 +162,7 @@ export const TaskComponent = () => {
 				})
 			})()
 
-			// axios.get("/fetch").then((res) => ((res.data).Message).Data).then((res) => 
+			// axios.get("/fetch").then((res) => (res.data).Data).then((res) => 
 			// 	{
 			// 		// This is to check if the data is changed or not so as to not cause latency issues
 			// 		if(!isEqual(Tasks,res)){
@@ -254,13 +263,16 @@ export const TaskComponent = () => {
 
 	function TokenRefresh(Request, Method="GET", Payload={}){
 		return new Promise((myresolve,myreject) => {
+
+			const Parameters = { UserID : UserID}
+			
 			if (Method === "POST"){
-		
 				axios.post(Request, Payload, {
 					headers : {
 						"Content-Type" : "application/json",
-						"X-CSRF-TOKEN" : (document.cookie).split(";")[1].split("=")[1]
-					}
+						"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
+					},
+					params : Parameters
 				}).then((res) => {
 					myresolve(res)
 				}).catch((error) => {
@@ -270,8 +282,9 @@ export const TaskComponent = () => {
 							axios.post(Request, Payload, {
 								headers : {
 									"Content-Type" : "application/json",
-									"X-CSRF-TOKEN" : (document.cookie).split(";")[1].split("=")[1]
-								}
+									"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
+								},
+								params : Parameters
 							}).then((res) => {
 								myresolve(res)
 							})
@@ -285,13 +298,17 @@ export const TaskComponent = () => {
 			} 
 			
 			else {
-				axios.get(Request).then((res) => {
+				axios.get(Request,{
+					params : Parameters
+				}).then((res) => {
 					myresolve(res)
 				}).catch((error) => {
 					axios.get("/refresh").then((res) => {
 						console.warn("Refresh Done")
 						try {
-							axios.get(Request).then((res) => {
+							axios.get(Request,{
+								params : Parameters
+							}).then((res) => {
 								myresolve(res)
 							})
 						} catch (error) {
@@ -321,15 +338,30 @@ export const TaskComponent = () => {
 			if (Heading === "") {
 				AddTaskRef.current.focus();
 				AddTaskRef.current.style.outline = "0.7px solid rgb(239,68,68)";
+				setisAddTaskLoading(false)
 			} else {
 				AddTaskRef.current.style.outline = "none";
 
 				(async () => {
 					await TokenRefresh("/new","POST",{
 						Heading: Heading,
-						Pinned: false,
 						Color: CurrentColor
-					}).then((res) => console.log(res.data))
+					}).then((res) => {
+
+						console.log(res.data)
+
+						setAddTask(false);
+						setisAddTaskLoading(false)
+						//  Adding the new task locally
+						setTasks([
+							...Tasks,
+							{
+								Heading: Heading,
+								Color: CurrentColor,
+								TaskID: res["data"].TaskID
+							},
+						])
+					})
 					.catch((error) => {
 						if (error.status === 401){
 							setError({
@@ -349,7 +381,6 @@ export const TaskComponent = () => {
 
 				// axios.post("/new",{
 				// 	Heading: Heading,
-				// 	Pinned: false,
 				// 	Color: CurrentColor
 				// },{
 				// 	headers : {
@@ -357,16 +388,7 @@ export const TaskComponent = () => {
 				// 	},
 				// }).then((res) => console.log(res.data))
 
-				setAddTask(false);
-				//  Adding the new task locally
-				setTasks([
-					...Tasks,
-					{
-						Heading: Heading,
-						Pinned: false,
-						Color: CurrentColor
-					},
-				]);
+				;
 			}
 		} 
 		// This will handle the checklist type tasks
@@ -378,6 +400,7 @@ export const TaskComponent = () => {
 				if (CheckListTaskRef.current[i].children[1].value === ""){
 					CheckListTaskRef.current[i].children[1].focus()
 					CheckListTaskRef.current[i].children[1].style.outline = "0.7px solid rgb(239,68,68)"; // This will highlight the textbox which is empty
+					setisAddTaskLoading(false)
 				} else {
 					CheckListCount += 1 // If the textbox is not empty we increment the count
 					CheckListTaskRef.current[i].children[1].style.outline = "none" // we remove the outline if the textbox is not empty
@@ -390,7 +413,6 @@ export const TaskComponent = () => {
 			if (CheckListCount === CheckListItems.length){
 				console.log({
 					Contents: CheckListItems,
-					Pinned: false,
 					Type: "CheckList",
 					Color: CurrentColor
 				});
@@ -398,10 +420,30 @@ export const TaskComponent = () => {
 				(async () => {
 					await TokenRefresh("/new","POST",{
 						Contents: CheckListItems,
-						Pinned: false,
 						Type: "CheckList",
 						Color: CurrentColor
-					}).then((res) => console.log(res.data))
+					}).then((res) => {
+
+						console.log(res.data)
+
+						setAddTask(false);
+						setisAddTaskLoading(false)
+						setCheckListItems([{Heading: "",Checked: false}])
+						setAddCheckBoxTask(false)
+
+						//  Adding the new task locally
+						setTasks([
+							...Tasks,
+							{	
+								Contents: CheckListItems, // We are adding the checklist items to the "Contents" key
+								Type: "CheckList",
+								Color: CurrentColor,
+								TaskID: res["data"].TaskID
+							},
+						]);
+
+
+					})
 					.catch((error) => {
 						if (error.status === 401){
 							setError({
@@ -421,7 +463,6 @@ export const TaskComponent = () => {
 				
 				// axios.post("/new",{
 				// 	Contents: CheckListItems,
-				// 	Pinned: false,
 				// 	Type: "CheckList",
 				// 	Color: CurrentColor
 				// },{
@@ -430,20 +471,8 @@ export const TaskComponent = () => {
 				// 	},
 				// }).then((res) => console.log(res.data))
 
-				setAddTask(false);
-				setCheckListItems([{Heading: "",Checked: false}])
-				setAddCheckBoxTask(false)
-			//  Adding the new task locally
+				
 			
-			setTasks([
-				...Tasks,
-				{	
-					Contents: CheckListItems, // We are adding the checklist items to the "Contents" key
-					Pinned: false,
-					Type: "CheckList",
-					Color: CurrentColor
-				},
-			]);
 			}
 
 		}
@@ -494,8 +523,7 @@ export const TaskComponent = () => {
 
 		(async () => {
 			await TokenRefresh("/new","POST",{
-				Heading: DeletedTasks[0].Heading,
-				Pinned: DeletedTasks[0].Pinned,
+				...(DeletedTasks[0])
 			}).then((res) => console.log(res.data))
 			.catch((error) => {
 				if (error.status === 401){
@@ -516,7 +544,6 @@ export const TaskComponent = () => {
 
 		// axios.post("/new",{
 		// 	Heading: DeletedTasks[0].Heading,
-		// 	Pinned: DeletedTasks[0].Pinned,
 		// },{
 		// 	headers : {
 		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
@@ -585,7 +612,7 @@ export const TaskComponent = () => {
 								<div onClick={() => {
 										const UpdatedCheckListItems = JSON.parse(JSON.stringify(item));
 										UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked;
-										UpdateTask(UpdatedCheckListItems, item, index);
+										UpdateTask(UpdatedCheckListItems, {TaskID : item["TaskID"]}, index);
 									}} className={`shrink-0 w-[13.5px] h-[13.5px] mt-[5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
 									<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
 								</div>
@@ -710,18 +737,33 @@ export const TaskComponent = () => {
 							<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
 								<img width={"25px"} src="/color_picker.png"/>
 							</div>
-							<div
+							<button
 								// This is to add the task to the database
-								onClick={() => {
+								disabled={isAddTaskLoading}
+								onClick={(e) => {
+									console.warn("Yessss")
 									SubmitTask()
+									setisAddTaskLoading(true)
 								}}
-								className="w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500">
+								className={`${isAddTaskLoading && "!bg-green-500/70 cursor-not-allowed"} w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500`}>
 								Add Task{" "}
-								<i
+								{isAddTaskLoading ? (
+									<i
+									className={`${
+										isAddTaskLoading
+											? "fas fa-circle-notch animate-spin ml-2"
+											: "fas fa-chevron-right"
+									} ml-1`}
+									aria-hidden="true"></i>
+								) : (
+									<i
 									className="fas fa-chevron-right pl-1"
-									aria-hidden="true"></i>{" "}
-							</div>
-							<div
+									aria-hidden="true"></i>
+								)}
+								
+								
+							</button>
+							<button
 								// THis is to cancel the task adding process
 								onClick={() => {
 									setAddTask(false)
@@ -734,7 +776,7 @@ export const TaskComponent = () => {
 								<i
 									className="fas fa-xmark pl-1"
 									aria-hidden="true"></i>{" "}
-							</div>
+							</button>
 							{/* This is responsible for switching between the Normal text task and checklist task */}
 							{!AddCheckBoxTask ? (
 								<div onClick={() =>{
@@ -831,7 +873,7 @@ export const TaskComponent = () => {
 											// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
 											CheckListItems.Color = CurrentColor
 											console.warn(CheckListItems)
-											UpdateTask(omit(CheckListItems,"Index","OriginalItem"), {_id : CheckListItems._id}, CheckListItems.Index)
+											UpdateTask(omit(CheckListItems,"Index","OriginalItem"), {TaskID : CheckListItems["OriginalItem"].TaskID}, CheckListItems.Index)
 											// After updating the task we are setting the EditTask state to false to close the editing page
 											setEditTask(false)
 											setEditCheckBoxTask(false)
@@ -910,7 +952,7 @@ export const TaskComponent = () => {
 										onClick={() => {
 											EditTaskValue["ModifiedItem"].Color = CurrentColor
 											// We are sending the ModifiedItem, OriginalItem and the Index to the UpdateTask function
-											UpdateTask(EditTaskValue.ModifiedItem, EditTaskValue.OriginalItem, EditTaskValue.Index)
+											UpdateTask(EditTaskValue.ModifiedItem, {TaskID : EditTaskValue["OriginalItem"].TaskID}, EditTaskValue.Index)
 											// After updating the task we are setting the EditTask state to false to close the editing page
 											setEditTask(false)
 										}}

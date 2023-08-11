@@ -11,25 +11,24 @@ import SignUpComponent from './Authentication/Components/SignUpComponent'
 import AuthContext from "./Authentication/Components/AuthContext"
 
 function App() {
-  const [Authstate, setAuthstate] = useState((localStorage.getItem("Authstate") == "true" ? true : false)) 
+	const [Authstate, setAuthstate] = useState((localStorage.getItem("Authstate") == "true" ? true : false)) 
+	const [UserID, setUserID] = useState(localStorage.getItem("UserID"))
 
-  useEffect(() => {
-    localStorage.setItem("Authstate",Authstate)
-  }, [Authstate])
+	useEffect(() => {
+		localStorage.setItem("Authstate",Authstate)
+	}, [Authstate])
 
-  let Location = useLocation()
-
-  return (
-    <AuthContext.Provider value={{ Authstate, setAuthstate }}>
-      <Routes >
-        <Route path='/' element={<HomeComponent Authstate={Authstate} />} />
-        {Authstate && <Route path='/tasks' element={<TaskComponent />} />}
-        {!Authstate && <Route path='/signin' element={<SignInComponent setAuthstate={setAuthstate} />} />}
-        {!Authstate && <Route path='/signup' element={<SignUpComponent setAuthstate={setAuthstate} />} />}
-        <Route path='*' element={<ErrorComponent />}/>
-      </Routes>
-    </AuthContext.Provider>
-  )
+	return (
+		<AuthContext.Provider value={{ Authstate, setAuthstate, UserID }}>
+			<Routes >
+			<Route path='/' element={<HomeComponent Authstate={Authstate} />} />
+			{Authstate && <Route path='/tasks' element={<TaskComponent />} />}
+			{!Authstate && <Route path='/signin' element={<SignInComponent setUserID={setUserID} />} />}
+			{!Authstate && <Route path='/signup' element={<SignUpComponent />} />}
+			<Route path='*' element={<ErrorComponent />}/>
+			</Routes>
+		</AuthContext.Provider>
+	)
 }
 
 export default App

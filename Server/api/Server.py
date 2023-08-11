@@ -12,6 +12,8 @@ from flask_jwt_extended import JWTManager,jwt_required,create_access_token,set_r
                                 set_access_cookies,unset_access_cookies,unset_refresh_cookies,\
                                 create_refresh_token,get_jwt_identity
                                 
+from waitress import serve                                
+
 # =====================================
 # This is to handle the object id in mongo db since it is not json serializable
 from bson.objectid import ObjectId
@@ -20,7 +22,11 @@ from bson.objectid import ObjectId
 from bcrypt import gensalt,hashpw,checkpw
 
 # To handle date and time
-from datetime import timedelta
+from datetime import timedelta,datetime
+
+# Pretty Print
+from pprint import pprint
+
 # =====================================
 # For accessing the Mongo DB
 from pymongo.mongo_client import MongoClient
@@ -60,13 +66,21 @@ app.config['JWT_CSRF_CHECK_FORM'] = True
 @jwt_required()
 def PostData():
     data = request.get_json()
-    print(data)
-    PostResult = collection.insert_one(data)
+    pprint(data)
+    
+    UserID = { "UserID" : (request.args.get("UserID"))}
+    
+    TaskID = int(datetime.now().timestamp())
+    collection.update_one(UserID,{
+        "$push" : {"Tasks" : {**data, "TaskID" : TaskID}}
+    })
 
-    response = jsonify({"Message" : {
+    response = jsonify({
         "Status" : "success",
-        "Operation" : "Task Added"
-    }})
+        "Operation" : "Task Added",
+        "TaskID" : TaskID
+    })
+    
     return response,200
 
 
@@ -75,14 +89,20 @@ def PostData():
 @jwt_required()
 def DeleteData():
     data = request.get_json()
-    data["_id"] = ObjectId(data["_id"])
-    print(data)
-    collection.delete_one({"_id":  data["_id"]})
-
-    response = jsonify({"Message" : {
+    pprint(data)
+    
+    UserID = { "UserID" : (request.args.get("UserID"))}
+    
+    collection.update_one(UserID,
+    {
+        "$pull" : {"Tasks" : {"TaskID" : data["TaskID"]}}
+    })
+    
+    response = jsonify({
         "Status" : "success",
         "Operation" : "Task Deleted"
-    }})
+    })
+    
     return response,200
 
 
@@ -91,27 +111,27 @@ def DeleteData():
 @jwt_required()
 def UpdateData():
     data = request.get_json()
+    pprint(data)
+    
     OriginalItem = data["OriginalItem"]
     ModifiedItem = data["ModifiedItem"]
     
-    response = jsonify({"Message" : {
+    response = jsonify({
         "Status" : "success",
         "Operation" : "Task Updated"
-    }})
+    })
     
     if OriginalItem == ModifiedItem:
         return response,200
-
-    try:
-        OriginalItem["_id"] = ObjectId(OriginalItem["_id"])
-        ModifiedItem["_id"] = ObjectId(ModifiedItem["_id"])
-        ModifiedItem = {"$set" : ModifiedItem}
-        print(OriginalItem, ModifiedItem)
-        collection.update_many({"_id":  OriginalItem["_id"]},ModifiedItem)
         
-    except KeyError:
-        ModifiedItem = {"$set" : ModifiedItem}
-        collection.update_many(OriginalItem,ModifiedItem)
+    UserID = { "UserID" : (request.args.get("UserID"))}
+    
+    collection.update_one({
+            **UserID,
+            "Tasks.TaskID" : OriginalItem["TaskID"]
+        }, {
+            "$set" : {"Tasks.$" : ModifiedItem}
+        })
       
     return response,200
 
@@ -119,18 +139,16 @@ def UpdateData():
 # This is to get all the data from DB
 @app.route("/fetch")
 @jwt_required()
-def Fetch():
-    Tasks = []
-    for i in collection.find():
-        # we are converting the id from object to string
-        i["_id"] = str(i["_id"])
-        Tasks.append(i)
+def Fetch():    
+    UserID = { "UserID" : (request.args.get("UserID"))}
+    
+    Tasks = collection.find_one(UserID)["Tasks"]
         
-    response = jsonify({"Message" : {
+    response = jsonify({
         "Status" : "success",
         "Operation" : "Tasks Fetched",
         "Data" : Tasks
-    }})
+    })
     return response,200
 
 # *====================================================================
@@ -141,7 +159,7 @@ def Fetch():
 @app.route("/signup",methods=["POST"])
 def SignUp():
     data = request.get_json()
-    print(data)
+    pprint(data)
     HashedPassword = hashpw(data["Password"].encode("utf-8"),gensalt())
     if User_Collection.find_one({"Username" : data["Username"]}) != None:
         response = jsonify({"Message" : {
@@ -151,11 +169,15 @@ def SignUp():
         return response,409
     
     PostResult = User_Collection.insert_one({**data,"Password":HashedPassword})
+    collection.insert_one({
+        "UserID" : str(PostResult.insertedTaskID),
+        "Tasks" : []
+    })
     
-    response = jsonify({"Message" : {
+    response = jsonify({
         "Status" : "success",
         "Operation" : "User Signed Up",
-    }})
+    })
     return response,200
         
   
@@ -163,28 +185,29 @@ def SignUp():
 @app.route("/signin",methods=["POST"])
 def SignIn():
     data = request.get_json()
-    print(data)
+    pprint(data)
     user_result = User_Collection.find_one({"Username" : data["Username"]})
     if not user_result:
-        response = jsonify({"Message" : {
+        response = jsonify({
             "Status" : "failed",
             "Operation" : "User Doesn't Exist",
-        }})
+        })
         return response,404
     
     if not checkpw(data["Password"].encode("utf-8"),user_result["Password"]):
-        response = jsonify({"Message" : {
-            "Status" : "success",
+        response = jsonify({
+            "Status" : "failed",
             "Operation" : "Wrong Credentials",
-        }})
+        })
         return response,401
     
     access_token = create_access_token(identity={"Username" : data["Username"]})
     refresh_token = create_refresh_token(identity={"Username" : data["Username"]})
-    response = jsonify({"Message" : {
+    response = jsonify({
         "Status" : "success",
         "Operation" : "User Signed In",
-    }})
+        "UserID" : str(user_result["_id"])
+    })
     set_access_cookies(response,access_token)
     set_refresh_cookies(response,refresh_token)
     return response,200
@@ -194,9 +217,9 @@ def SignIn():
 @app.route("/refresh")
 @jwt_required(refresh=True,verify_type=True)
 def TokenRefresh():
-    response = jsonify({"Message" : {
+    response = jsonify({
         "Status" : "success",
-    }})
+    })
     access_token = create_access_token(identity={"Username" : get_jwt_identity()})
     set_access_cookies(response,access_token)
     return response
@@ -205,10 +228,10 @@ def TokenRefresh():
 # This is to signout and unset both the Access and Refresh Token
 @app.route("/signout")
 def SignOut():
-    response = jsonify({"Message" : {
+    response = jsonify({
         "Status" : "success",
         "Operation" : "User Signed Out",
-    }})
+    })
     unset_access_cookies(response)
     unset_refresh_cookies(response)
     
@@ -228,4 +251,4 @@ def Settings():
 if __name__ == '__main__':
     # Now we are starting the server
     app.run(port=6565)
-
+    # serve(app,host="0.0.0.0",port=6565)

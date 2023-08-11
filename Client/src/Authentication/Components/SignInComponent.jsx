@@ -5,8 +5,8 @@ import axios from "../../Modules/axios";
 import { HeaderComponent } from "../../Components/AdditionalComponents";
 import AuthContext from "./AuthContext";
 
-const SignInComponent = () => {
-	const {Authstate, setAuthstate} = useContext(AuthContext)
+const SignInComponent = ({setUserID}) => {
+	const {setAuthstate} = useContext(AuthContext)
 
 	const [AuthData, setAuthData] = useState({
 		Username: "",
@@ -33,24 +33,26 @@ const SignInComponent = () => {
 	function Authentication(UserData) {
 		// This is to sign in the user
 		setLoading(true);
-		axios.post("/signin", UserData).then((data) => {
-			if (data[1] === 404 || data[1] === 401) {
+		axios.post("/signin", UserData).then((res) => {
+			setLoading(false);
+			console.log(res);
+			setUserID(res["data"]["UserID"])
+			localStorage.setItem("UserID",res["data"]["UserID"])
+			console.warn("Successfully Signed In!!");
+
+			setAuthData({
+				Username: "",
+				Password: "",
+			});
+			setAuthstate(true)
+			Navigate("/tasks",{replace:true});
+		}).catch((error) => {
+			if (error["response"].status === 404 || error["response"].status === 401) {
 				setLoading(false);
 				console.warn("Incorrect Username or Password");
 				setErrorMessage(Messages[1]); // "Incorrect Username or Password"
-			} else {
-				setLoading(false);
-				console.log(data);
-				console.warn("Successfully Signed In!!");
-
-				setAuthData({
-					Username: "",
-					Password: "",
-				});
-				setAuthstate(true)
-				Navigate("/tasks",{replace:true});
-			}
-		});
+			} 
+		})
 	}
 
 	function KeyPress(e,Index) {
@@ -124,7 +126,7 @@ const SignInComponent = () => {
 					/>
 				</div>
 				<div className="h-3" />
-				<div
+				<button
 					onClick={() => {
 						setErrorMessage(Messages[0]);
 
@@ -157,8 +159,10 @@ const SignInComponent = () => {
 						console.warn(UserData);
 						Authentication(UserData);
 					}}
+
+					disabled={Loading}
 					className={`${
-						Loading && "!bg-green-500/70 !cursor-not-allowed"
+						Loading && "!bg-green-500/70 cursor-not-allowed"
 					} w-[100px] mx-1 h-[40px] bg-green-500 rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500/70`}>
 					Sign In{" "}
 					<i
@@ -168,7 +172,7 @@ const SignInComponent = () => {
 								: "fas fa-chevron-right"
 						} ml-1`}
 						aria-hidden="true"></i>{" "}
-				</div>
+				</button>
 			</div>
 			<div>
 				<p onClick={() => Navigate("/")} className="inline text-sm hover:border-b cursor-pointer hover:text-white/70">
