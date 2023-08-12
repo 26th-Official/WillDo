@@ -3,6 +3,71 @@ import { useNavigate } from "react-router-dom";
 import axios from "../Modules/axios";
 
 import AuthContext from "../Authentication/Components/AuthContext";
+import Convert2Dict from "../Modules/Utility";
+
+export function TokenRefresh(Request, Method="GET", Payload={}){
+	
+	return new Promise((myresolve,myreject) => {
+
+		const Parameters = { UserID : localStorage.getItem("UserID")}
+		
+		if (Method === "POST"){
+			axios.post(Request, Payload, {
+				headers : {
+					"Content-Type" : "application/json",
+					"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
+				},
+				params : Parameters
+			}).then((res) => {
+				myresolve(res)
+			}).catch((error) => {
+				axios.get("/refresh").then(() => {
+					console.warn("Refresh Done")
+					try {
+						axios.post(Request, Payload, {
+							headers : {
+								"Content-Type" : "application/json",
+								"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
+							},
+							params : Parameters
+						}).then((res) => {
+							myresolve(res)
+						})
+					} catch (error) {
+						if (error.response.status === 401){
+							myreject(error.response)
+						}
+					}
+				})
+			})
+		} 
+		
+		else {
+			axios.get(Request,{
+				params : Parameters
+			}).then((res) => {
+				myresolve(res)
+			}).catch((error) => {
+				axios.get("/refresh").then((res) => {
+					console.warn("Refresh Done")
+					try {
+						axios.get(Request,{
+							params : Parameters
+						}).then((res) => {
+							myresolve(res)
+						})
+					} catch (error) {
+						myreject(error)
+					}
+				}).catch((error) => {
+					if (error.response.status === 401){
+						myreject(error.response)
+					}
+				})
+			})
+		}
+	})
+}
 
 export function DeleteTaskModal({UndoTask}) {
 	return (
@@ -24,6 +89,8 @@ export function ErrorModal({ErrorType}) {
 			if (res.status == 200){
 				localStorage.setItem("Authstate", false)
 				localStorage.setItem("UserID","")
+				localStorage.setItem("SessionDuration","")
+				
 				setAuthstate(false)
 				Navigate("/")
 			}

@@ -10,7 +10,7 @@ import { omit, isEqual, set } from "lodash";
 import { HuePicker } from 'react-color';
 
 // Custom Components
-import { DeleteTaskModal, ErrorModal, TaskOptions } from './AdditionalComponents';
+import { DeleteTaskModal, ErrorModal, TaskOptions, TokenRefresh } from './AdditionalComponents';
 import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
 import AuthContext from "../Authentication/Components/AuthContext";
@@ -258,71 +258,6 @@ export const TaskComponent = () => {
 	},[EditTask,AddTask])
 
 	// ? =======================================================
-
-	// **********************************************************************************************
-
-	function TokenRefresh(Request, Method="GET", Payload={}){
-		return new Promise((myresolve,myreject) => {
-
-			const Parameters = { UserID : UserID}
-			
-			if (Method === "POST"){
-				axios.post(Request, Payload, {
-					headers : {
-						"Content-Type" : "application/json",
-						"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
-					},
-					params : Parameters
-				}).then((res) => {
-					myresolve(res)
-				}).catch((error) => {
-					axios.get("/refresh").then(() => {
-						console.warn("Refresh Done")
-						try {
-							axios.post(Request, Payload, {
-								headers : {
-									"Content-Type" : "application/json",
-									"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
-								},
-								params : Parameters
-							}).then((res) => {
-								myresolve(res)
-							})
-						} catch (error) {
-							if (error.response.status === 401){
-								myreject(error.response)
-							}
-						}
-					})
-				})
-			} 
-			
-			else {
-				axios.get(Request,{
-					params : Parameters
-				}).then((res) => {
-					myresolve(res)
-				}).catch((error) => {
-					axios.get("/refresh").then((res) => {
-						console.warn("Refresh Done")
-						try {
-							axios.get(Request,{
-								params : Parameters
-							}).then((res) => {
-								myresolve(res)
-							})
-						} catch (error) {
-							myreject(error)
-						}
-					}).catch((error) => {
-						if (error.response.status === 401){
-							myreject(error.response)
-						}
-					})
-				})
-			}
-		})
-	}
 
 	// **********************************************************************************************
 

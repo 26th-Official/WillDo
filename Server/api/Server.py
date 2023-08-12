@@ -10,7 +10,7 @@ from flask_cors import CORS
 # To Handle Token based Authentication
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token,set_refresh_cookies,\
                                 set_access_cookies,unset_access_cookies,unset_refresh_cookies,\
-                                create_refresh_token,get_jwt_identity
+                                create_refresh_token,get_jwt_identity,decode_token
                                 
 from waitress import serve                                
 
@@ -50,8 +50,7 @@ jwt = JWTManager(app)
 
 # Flask Variables for Flask-JWT
 app.config["JWT_SECRET_KEY"] = '846465498464987646sdf546548sd4651sfadf4as654fd'
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=10)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=1)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_COOKIE_SECURE'] = True
@@ -160,7 +159,9 @@ def Fetch():
 def SignUp():
     data = request.get_json()
     pprint(data)
+    
     HashedPassword = hashpw(data["Password"].encode("utf-8"),gensalt())
+    
     if User_Collection.find_one({"Username" : data["Username"]}) != None:
         response = jsonify({"Message" : {
             "Status" : "denied",
@@ -168,7 +169,12 @@ def SignUp():
         }})
         return response,409
     
-    PostResult = User_Collection.insert_one({**data,"Password":HashedPassword})
+    PostResult = User_Collection.insert_one({
+        **data,
+        "Password":HashedPassword,
+        "SessionDuration" : 1
+    })
+    
     collection.insert_one({
         "UserID" : str(PostResult.insertedTaskID),
         "Tasks" : []
@@ -202,12 +208,18 @@ def SignIn():
         return response,401
     
     access_token = create_access_token(identity={"Username" : data["Username"]})
-    refresh_token = create_refresh_token(identity={"Username" : data["Username"]})
+    refresh_token = create_refresh_token(identity={"Username" : data["Username"]},expires_delta=timedelta(days=user_result["SessionDuration"]))
     response = jsonify({
         "Status" : "success",
         "Operation" : "User Signed In",
-        "UserID" : str(user_result["_id"])
+        "UserID" : str(user_result["_id"]),
+        "SessionDuration" : str(user_result["SessionDuration"])
     })
+    
+    print("============================")
+    print((datetime.fromtimestamp(decode_token(refresh_token)["exp"])) - (datetime.now()))
+    print("============================")
+
     set_access_cookies(response,access_token)
     set_refresh_cookies(response,refresh_token)
     return response,200
@@ -237,13 +249,31 @@ def SignOut():
     
     return response,200
 
+
 # !====================================================================
 
 # ?========================== Setting =================================
 
-@app.route('/settings')
+@app.route("/settings", methods=["POST"])
+@jwt_required()
 def Settings():
-    pass
+    data = request.get_json()
+    print(data)
+    
+    _id = { "_id" : ObjectId(str((request.args.get("UserID"))))}
+
+    User_Collection.update_one({
+        **_id
+    }, {
+        "$set" : {"SessionDuration" : int(data["SessionDuration"])}
+    })
+    
+    response = jsonify({
+        "Status" : "success",
+        "Operation" : "Settings Updated",
+    })
+    
+    return response,200
 
 # ?====================================================================
 

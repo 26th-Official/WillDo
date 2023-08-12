@@ -37,7 +37,6 @@ const SignupComponent = () => {
             else {
                 setLoading(false)
                 console.warn("Successfully Signed Up!!")
-                alert("Successfully Signed Up!!")
                 setAuthData({
                     Username : "",
                     Password : "",

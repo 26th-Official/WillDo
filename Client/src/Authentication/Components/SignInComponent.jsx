@@ -37,7 +37,10 @@ const SignInComponent = ({setUserID}) => {
 			setLoading(false);
 			console.log(res);
 			setUserID(res["data"]["UserID"])
+
 			localStorage.setItem("UserID",res["data"]["UserID"])
+			localStorage.setItem("SessionDuration",res["data"]["SessionDuration"])
+			
 			console.warn("Successfully Signed In!!");
 
 			setAuthData({
