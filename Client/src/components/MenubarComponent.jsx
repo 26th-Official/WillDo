@@ -7,7 +7,7 @@ import { toInteger } from "lodash";
 import { TokenRefresh } from "./AdditionalComponents";
 
 export function MenubarComponent({ setMenuBarStatus }) {
-	const { setAuthstate, UserID } = useContext(AuthContext);
+	const { setAuthstate, setResetPassword } = useContext(AuthContext);
 	const [Settings, setSettings] = useState(false);
 
 	const [SessionSettings, setSessionSettings] = useState(false)
@@ -24,7 +24,7 @@ export function MenubarComponent({ setMenuBarStatus }) {
 		}
 	});
 
-	function SignOut() {
+	function SignOut(Redirect="/") {
 		axios.get("/signout").then((res) => {
 			console.log(res.data);
 			if (res.status == 200) {
@@ -32,7 +32,7 @@ export function MenubarComponent({ setMenuBarStatus }) {
 				localStorage.setItem("UserID", "");
 				localStorage.setItem("SessionDuration", "");
 				setAuthstate(false);
-				Navigate("/");
+				Navigate(Redirect);
 			}
 		});
 	}
@@ -117,13 +117,14 @@ export function MenubarComponent({ setMenuBarStatus }) {
 					)}
 
 					<button
+						onClick={() => {
+							SignOut("/reset")
+							setResetPassword(true);
+						}}
 						className="p-3 bg-secondary m-2 rounded-md hover:bg-red-500">
 						Reset Password
 					</button>
-						{/* <button className="p-3 w-full bg-secondary m-2 rounded-md hover:bg-secondary/50">Session Duration (Days)</button>  */}
-						{/* <p className="text-left font-bold text-xl">Settings</p> */}
-						{/* <div className="h-4" /> */}
-						
+					<div className="h-0.5 my-2 bg-secondary"/>
 				</div>
 			) : (
 				<div className="fixed left-0 top-0 h-[100vh] w-[350px] max-sm:w-[330px] p-5 z-[110] border-r-2 bg-primary flex flex-col">

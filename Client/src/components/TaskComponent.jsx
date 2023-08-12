@@ -667,7 +667,7 @@ export const TaskComponent = () => {
 								hover:text-white/100"> <i className="fa fa-plus text-xs px-1" aria-hidden="true"></i>Add Item</p>
 							</div>
 						)}
-						<br />
+						<div className="h-1" />
 						<div className="flex mx-auto">
 							<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
 								<img width={"25px"} src="/color_picker.png"/>
@@ -731,7 +731,7 @@ export const TaskComponent = () => {
 								</div>
 							)}
 						</div>
-						<br />
+						<div className="h-1" />
 						{ColorPickerState && (
 							<div className="flex items-center space-x-3 mx-auto">
 								<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
@@ -798,7 +798,7 @@ export const TaskComponent = () => {
 								</div>
 								{/* This will add new item to the checklist */}
 								
-								<br />
+								<div className="h-1" />
 								<div className="flex mx-auto">
 									<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
 										<img width={"25px"} src="/color_picker.png"/>
@@ -834,7 +834,7 @@ export const TaskComponent = () => {
 											aria-hidden="true"></i>{" "}
 									</div>
 								</div>
-								<br />
+								<div className="h-1" />
 								{ColorPickerState && (
 									<div className="flex items-center space-x-3 mx-auto">
 										<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
@@ -878,7 +878,7 @@ export const TaskComponent = () => {
 									}}
 									rows={1}
 									className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
-								<br />
+								<div className="h-1" />
 								<div className="flex mx-auto">
 									<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
 										<img width={"25px"} src="/color_picker.png"/>
@@ -909,7 +909,7 @@ export const TaskComponent = () => {
 											aria-hidden="true"></i>{" "}
 									</div>
 								</div>
-								<br />
+								<div className="h-1" />
 								{ColorPickerState && (
 									<div className="flex items-center space-x-3 mx-auto">
 										<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">

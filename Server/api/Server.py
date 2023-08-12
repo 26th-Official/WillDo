@@ -192,15 +192,16 @@ def SignUp():
 def SignIn():
     data = request.get_json()
     pprint(data)
-    user_result = User_Collection.find_one({"Username" : data["Username"]})
-    if not user_result:
+    UserData = User_Collection.find_one({"Username" : data["Username"]})
+    
+    if not UserData:
         response = jsonify({
             "Status" : "failed",
             "Operation" : "User Doesn't Exist",
         })
         return response,404
     
-    if not checkpw(data["Password"].encode("utf-8"),user_result["Password"]):
+    if not checkpw(data["Password"].encode("utf-8"),UserData["Password"]):
         response = jsonify({
             "Status" : "failed",
             "Operation" : "Wrong Credentials",
@@ -208,12 +209,12 @@ def SignIn():
         return response,401
     
     access_token = create_access_token(identity={"Username" : data["Username"]})
-    refresh_token = create_refresh_token(identity={"Username" : data["Username"]},expires_delta=timedelta(days=user_result["SessionDuration"]))
+    refresh_token = create_refresh_token(identity={"Username" : data["Username"]},expires_delta=timedelta(days=UserData["SessionDuration"]))
     response = jsonify({
         "Status" : "success",
         "Operation" : "User Signed In",
-        "UserID" : str(user_result["_id"]),
-        "SessionDuration" : str(user_result["SessionDuration"])
+        "UserID" : str(UserData["_id"]),
+        "SessionDuration" : str(UserData["SessionDuration"])
     })
     
     print("============================")
@@ -235,6 +236,40 @@ def TokenRefresh():
     access_token = create_access_token(identity={"Username" : get_jwt_identity()})
     set_access_cookies(response,access_token)
     return response
+
+
+@app.route("/reset", methods=["POST"])
+def ResetPassword():
+    data = request.get_json()
+    pprint(data)
+    
+    _id = { "_id" : ObjectId(str((request.args.get("UserID"))))}
+    
+    UserData = User_Collection.find_one({
+        **_id
+    })
+    
+    if not checkpw(data["CurrentPassword"].encode("utf-8"),UserData["Password"]):
+        response = jsonify({
+            "Status" : "failed",
+            "Operation" : "Wrong Credentials",
+        })
+        return response,401
+    
+    HashedPassword = hashpw(data["NewPassword"].encode("utf-8"),gensalt())
+    
+    User_Collection.update_one({
+        **_id
+    }, {
+        "$set" : {"Password" : HashedPassword}
+    })
+    
+    response = jsonify({
+        "Status" : "success",
+        "Operation" : "Password Resetted",
+    })
+    
+    return response,200
 
 
 # This is to signout and unset both the Access and Refresh Token

@@ -35,7 +35,7 @@ const SignInComponent = ({setUserID}) => {
 		setLoading(true);
 		axios.post("/signin", UserData).then((res) => {
 			setLoading(false);
-			console.log(res);
+			console.log(res.data);
 			setUserID(res["data"]["UserID"])
 
 			localStorage.setItem("UserID",res["data"]["UserID"])
@@ -54,7 +54,8 @@ const SignInComponent = ({setUserID}) => {
 				setLoading(false);
 				console.warn("Incorrect Username or Password");
 				setErrorMessage(Messages[1]); // "Incorrect Username or Password"
-			} 
+			}
+			 
 		})
 	}
 
@@ -146,20 +147,17 @@ const SignInComponent = ({setUserID}) => {
 
 							console.warn("Fill all the fields!!");
 							setErrorMessage(Messages[3]);
-							return;
 						}
 
 						if (!PasswordRegex.test(AuthRef.current[1].value)) {
 							console.warn("Not valid Password!!");
 							setErrorMessage(Messages[2]);
-							return;
 						}
 
 						const UserData = {
 							Username: AuthRef.current[0].value,
 							Password: AuthRef.current[1].value,
 						};
-						console.warn(UserData);
 						Authentication(UserData);
 					}}
 

@@ -17,7 +17,7 @@ export function TokenRefresh(Request, Method="GET", Payload={}){
 					"Content-Type" : "application/json",
 					"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
 				},
-				params : Parameters
+				params : Parameters,
 			}).then((res) => {
 				myresolve(res)
 			}).catch((error) => {
