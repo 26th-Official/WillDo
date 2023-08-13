@@ -12,7 +12,7 @@ const SignupComponent = () => {
 		LastName: "",
 	});
 
-    const Messages = ["","Username already exists!", "Please Enter a Valid Password", "Please enter all the Fields"]
+    const Messages = ["","Username already exists!", "Please Enter a Valid Password", "Please enter all the Fields", "Something went wrong! Try again later..."]
 
 	const [ErrorMessage, setErrorMessage] = useState(Messages[0]); // 👆
 
@@ -29,23 +29,26 @@ const SignupComponent = () => {
         setLoading(true)
         axios.post("/signup",UserData).then((data) => 
         {
-            if (data[1] === 400){
+   
+			setLoading(false)
+			console.warn("Successfully Signed Up!!")
+			setAuthData({
+				Username : "",
+				Password : "",
+				FirstName : "",
+				LastName : ""
+			})
+			Navigate("/signin")
+        }).catch((error) => {
+			if (error["response"].status === 409){
                 setLoading(false)
                 console.warn("Username already exists!")
                 setErrorMessage(Messages[1]) // "Username already exists!"
-            }
-            else {
-                setLoading(false)
-                console.warn("Successfully Signed Up!!")
-                setAuthData({
-                    Username : "",
-                    Password : "",
-                    FirstName : "",
-                    LastName : ""
-                })
-                Navigate("/signin")
-            }
-        })
+            } else {
+			setLoading(false)
+			setErrorMessage(Messages[4]) // "Something went wrong! Try again later..."
+			}
+		})
     }
 
 	function KeyPress(e,Index) {

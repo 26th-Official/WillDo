@@ -6,7 +6,7 @@ import { HeaderComponent } from '../../Components/AdditionalComponents'
 import AuthContext from './AuthContext'
 
 const ResetPasswordComponent = () => {
-    const { UserID, setAuthstate } = useContext(AuthContext)
+    const { UserID } = useContext(AuthContext)
 
     const [AuthData, setAuthData] = useState({
 		CurrentPassword: "",
@@ -20,6 +20,7 @@ const ResetPasswordComponent = () => {
 		"Please Enter a Valid Password",
         "Current Password is Incorrect",
 		"Please enter all the Fields",
+        "Something went wrong! Try again later..."
 	];
 	const [ErrorMessage, setErrorMessage] = useState(Messages[0]); // 👆
 
@@ -64,10 +65,8 @@ const ResetPasswordComponent = () => {
             Navigate("/signin")
 
         }).catch((error) => {
-            if (error["response"].status === 401) {
-				setLoading(false);
-				setErrorMessage(Messages[3]); // "Current Password is Incorrect"
-			}
+            setLoading(false)
+			setErrorMessage(Messages[5]) // "Something went wrong! Try again later..."
         })
     }
 

@@ -21,19 +21,7 @@ export function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setA
                 setDeletedTasks([])
 			})
 			.catch((error) => {
-				if (error.status === 401){
-					setError({
-						Status: true,
-						Type: 401
-					})
-					console.error(error)
-				} else {
-					setError({
-						Status: true,
-						Type: 500
-					})
-					console.error(error)
-				}
+				setError(error)
 			})
 		})()
 		

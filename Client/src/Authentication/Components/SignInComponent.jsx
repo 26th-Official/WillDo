@@ -18,6 +18,7 @@ const SignInComponent = ({setUserID}) => {
 		"Incorrect Username or Password",
 		"Please Enter a Valid Password",
 		"Please enter all the Fields",
+		"Something went wrong! Try again later..."
 	];
 	const [ErrorMessage, setErrorMessage] = useState(Messages[0]); // 👆
 
@@ -49,13 +50,15 @@ const SignInComponent = ({setUserID}) => {
 			});
 			setAuthstate(true)
 			Navigate("/tasks",{replace:true});
+			
 		}).catch((error) => {
 			if (error["response"].status === 404 || error["response"].status === 401) {
-				setLoading(false);
-				console.warn("Incorrect Username or Password");
+				setLoading(false);				
 				setErrorMessage(Messages[1]); // "Incorrect Username or Password"
+			} else {
+				setLoading(false)
+				setErrorMessage(Messages[4]) // "Something went wrong! Try again later..."
 			}
-			 
 		})
 	}
 
@@ -174,6 +177,25 @@ const SignInComponent = ({setUserID}) => {
 						} ml-1`}
 						aria-hidden="true"></i>{" "}
 				</button>
+			</div>
+			<div>
+				<p onClick={() => Navigate("/")} className="inline text-sm hover:border-b cursor-pointer hover:text-white/70">
+					Home
+				</p>{" "}
+				|<p className="text-sm inline"> Don't have a account ?</p>
+				<p
+					onClick={() => {
+						setAuthData({
+							Username: "",
+							Password: "",
+						});
+						setErrorMessage("");
+						Navigate("/signup");
+					}}
+					className="group text-sm pl-1 items-center inline-flex hover:border-b hover:animate-pulse cursor-pointer">
+					Sign Up{" "}
+					<i className="fas fa-arrow-right-long pl-1 text-sm group-hover:text-green-500"></i>
+				</p>
 			</div>
 		</div>
 	);

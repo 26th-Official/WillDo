@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React from 'react'
 import { TokenRefresh } from './AdditionalComponents'
 
 const TrashComponent = ({ setTasks, DeletedTasks, setDeletedTasks, setError, DeleteLoading, setDeleteLoading, setisAddTaskLoading, isAddTaskLoading}) => {
@@ -13,19 +13,7 @@ const TrashComponent = ({ setTasks, DeletedTasks, setDeletedTasks, setError, Del
 				setDeletedTasks((prev) => prev.filter((item) => item.TaskID !== data.TaskID))
 			})
 			.catch((error) => {
-				if (error.status === 401){
-					setError({
-						Status: true,
-						Type: 401
-					})
-					console.error(error)
-				} else {
-					setError({
-						Status: true,
-						Type: 500
-					})
-					console.error(error)
-				}
+				setError(error)
 			})
 		})()
 	}
@@ -44,19 +32,7 @@ const TrashComponent = ({ setTasks, DeletedTasks, setDeletedTasks, setError, Del
 
             })
             .catch((error) => {
-                if (error.status === 401){
-                    setError({
-                        Status: true,
-                        Type: 401
-                    })
-                    console.error(error)
-                } else {
-                    setError({
-                        Status: true,
-                        Type: 500
-                    })
-                    console.error(error)
-                }
+                setError(error)
             })
         })()
 	}

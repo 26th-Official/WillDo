@@ -17,12 +17,12 @@ export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 					"Content-Type" : "application/json",
 					"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
 				},
-				params : Parameters,
+				params : Parameters
 			}).then((res) => {
 				myresolve(res)
 			}).catch((error) => {
-				axios.get("/refresh").then(() => {
-					console.warn("Refresh Done")
+				axios.get("/refresh").then(() => 
+				{
 					try {
 						axios.post(Request, Payload, {
 							headers : {
@@ -34,9 +34,29 @@ export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 							myresolve(res)
 						})
 					} catch (error) {
-						if (error.response.status === 401){
-							myreject(error.response)
+						if (error.code === "ERR_NETWORK" || error.code === "ECONNABORTED"){
+							myreject({
+								Status: true,
+								Type: 500
+							})
+						} else if (error.response.status === 401) {
+							myreject({
+								Status: true,
+								Type: 401
+							})
 						}
+					}
+				}).catch((error) => {
+					if (error.code === "ERR_NETWORK" || error.code === "ECONNABORTED"){
+						myreject({
+							Status: true,
+							Type: 500
+						})
+					} else if (error.response.status === 401) {
+						myreject({
+							Status: true,
+							Type: 401
+						})
 					}
 				})
 			})
@@ -48,7 +68,8 @@ export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 			}).then((res) => {
 				myresolve(res)
 			}).catch((error) => {
-				axios.get("/refresh").then((res) => {
+				axios.get("/refresh").then((res) => 
+				{
 					console.warn("Refresh Done")
 					try {
 						axios.get(Request,{
@@ -57,11 +78,29 @@ export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 							myresolve(res)
 						})
 					} catch (error) {
-						myreject(error)
+						if (error.code === "ERR_NETWORK" || error.code === "ECONNABORTED"){
+							myreject({
+								Status: true,
+								Type: 500
+							})
+						} else if (error.response.status === 401) {
+							myreject({
+								Status: true,
+								Type: 401
+							})
+						}
 					}
 				}).catch((error) => {
-					if (error.response.status === 401){
-						myreject(error.response)
+					if (error.code === "ERR_NETWORK" || error.code === "ECONNABORTED"){
+						myreject({
+							Status: true,
+							Type: 500
+						})
+					} else if (error.response.status === 401) {
+						myreject({
+							Status: true,
+							Type: 401
+						})
 					}
 				})
 			})

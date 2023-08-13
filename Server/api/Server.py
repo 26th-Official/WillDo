@@ -23,6 +23,7 @@ from bcrypt import gensalt,hashpw,checkpw
 
 # To handle date and time
 from datetime import timedelta,datetime
+from time import sleep
 
 # Pretty Print
 from pprint import pprint
@@ -33,6 +34,16 @@ from pymongo import UpdateOne
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 # =====================================
+# For Emailing Purposes
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+# for Encoding support
+import base64
+# For OTP generation
+from random import randint
+
 
 # ?====================================================
 
@@ -57,7 +68,9 @@ app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_COOKIE_SECURE'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
 
-
+# Email Configs
+Credential = Credentials.from_authorized_user_file("./Credentials.json")
+Service = build("gmail","v1",Credential)
 
 # *===================CRUD Operations=================================
 
@@ -219,6 +232,7 @@ def UpdateData():
 @app.route("/fetch")
 @jwt_required()
 def Fetch():    
+    sleep(20)
     UserID = { "UserID" : (request.args.get("UserID"))}
     
     Results = collection.find_one(UserID)
@@ -253,7 +267,8 @@ def SignUp():
     PostResult = User_Collection.insert_one({
         **data,
         "Password":HashedPassword,
-        "SessionDuration" : 1
+        "SessionDuration" : 1,
+        "OTP" : 0
     })
     
     collection.insert_one({
@@ -353,6 +368,64 @@ def ResetPassword():
     
     return response,200
 
+
+@app.route("/forgotpassword")
+def ResetPassword():
+    data = request.get_json()
+    pprint(data)
+    
+    OperationType = request.args.get("OperationType")
+    
+    if OperationType == "Generate":
+        
+        OTP = randint(100000,999999)
+        
+        User_Collection.update_one({
+            "Username" : data["Username"]
+        }, {
+            "$set" : {"OTP" : OTP}
+        })
+        
+        Message = MIMEText(f"Here is your OTP for Verification {OTP}")
+        Message["to"] = data["email"]
+        Message["from"] = "26thofficial.creator@gmail.com"
+        Message["subject"] = "Verification from WillDo"
+        MessageBody = {
+            "raw" : base64.urlsafe_b64encode(Message.as_bytes()).decode()
+        }
+        
+        Message = Service.users().messages().send(userId="me",body=MessageBody).execute()
+        print(f"Sucessfully sent - {Message['id']}")
+        
+        response = jsonify({
+            "Status" : "success",
+            "Operation" : "Verification Mail Sent",
+        })
+        
+        return response,200
+    
+    elif OperationType == "Verify":
+        
+        UserData = User_Collection.find_one({
+            "Username" : data["Username"]
+        })
+        
+        if UserData["OTP"] == data["OTP"]:
+            response = jsonify({
+                "Status" : "success",
+                "Operation" : "Verification Successful",
+                "UserID" : UserData["_id"]
+            })
+            
+            return response,200
+        
+        response = jsonify({
+            "Status" : "failed",
+            "Operation" : "Verification Unsuccessful",
+        })
+        
+        return response,401
+    
 
 # This is to signout and unset both the Access and Refresh Token
 @app.route("/signout")

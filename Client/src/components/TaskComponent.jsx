@@ -1,11 +1,6 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
-import axios from "../Modules/axios";
-import Convert2Dict from "../Modules/Utility"
+import React, { useEffect, useRef, useState } from "react";
 
-// for realtime data fetching from backend
-import io from "socket.io-client";
-
-import { omit, isEqual, set } from "lodash";
+import { omit, isEqual } from "lodash";
 
 import { HuePicker } from 'react-color';
 
@@ -14,7 +9,6 @@ import { DeleteTaskModal, ErrorModal, TaskOptions, TokenRefresh } from './Additi
 import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
 import TrashComponent from "./TrashComponent";
-import AuthContext from "../Authentication/Components/AuthContext";
 
 // **********************************************************************************************
 
@@ -155,73 +149,11 @@ export const TaskComponent = () => {
 					setError(DefaultError)
 
 				}).catch((error) => {
-					if (error.status === 401){
-						setError({
-							Status: true,
-							Type: 401
-						})
-						console.error(error)
-					} else {
-						setError({
-							Status: true,
-							Type: 500
-						})
-						console.error(error)
-					}
+					setError(error)
 				})
 			})()
-
-			// axios.get("/fetch").then((res) => (res.data).Data).then((res) => 
-			// 	{
-			// 		// This is to check if the data is changed or not so as to not cause latency issues
-			// 		if(!isEqual(Tasks,res)){
-			// 			setTasks(res)
-			// 		}
-			// 		setFetched(true);
-			// 		setRefetch(false);
-
-			// 	}).catch((error) => {
-			// 		console.clear()
-			// 		if (error.response.status === 401){
-			// 			axios.get("/refresh").then(() => {
-			// 				axios.get("/fetch").then((res) => ((res.data).Message).Data).then((res) => 
-			// 					{
-			// 						// This is to check if the data is changed or not so as to not cause latency issues
-			// 						if(!isEqual(Tasks,res)){
-			// 							setTasks(res)
-			// 						}
-			// 						setFetched(true);
-			// 						setRefetch(false);
-			// 					})
-			// 					.catch((error) => {
-			// 						setFetched(true)
-			// 						setError(true)
-			// 					});
-			// 			}).catch(() => {
-			// 				setFetched(true)
-			// 				setError(true)
-			// 			})
-			// 		}
-			// 	});
 		}
 	}, [Refetch]);
-
-	// ? =======================================================
-
-	// for receiving signal from backend if there is a db update and control the refetch state
-	// useEffect(() => {
-	// 	const socketio = io("/");
-
-	// 	socketio.on("DB_Update", () => {
-	// 		console.log("Update has been Made");
-	// 		setRefetch(true);
-	// 	});
-
-	// 	return () => {
-	// 		socketio.disconnect();
-	// 	};
-	// });
-
 
 	// ? =======================================================
 
@@ -307,34 +239,13 @@ export const TaskComponent = () => {
 						])
 					})
 					.catch((error) => {
-						if (error.status === 401){
-							setError({
-								Status: true,
-								Type: 401
-							})
-							console.error(error)
-						} else {
-							setError({
-								Status: true,
-								Type: 500
-							})
-							console.error(error)
-						}
+						setError(error)
 					})
 				})()
 
-				// axios.post("/new",{
-				// 	Heading: Heading,
-				// 	Color: CurrentColor
-				// },{
-				// 	headers : {
-				// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-				// 	},
-				// }).then((res) => console.log(res.data))
-
-				;
 			}
 		} 
+
 		// This will handle the checklist type tasks
 		else {
 			let CheckListCount = 0 // This will count the number of checklist items that are not empty
@@ -389,38 +300,12 @@ export const TaskComponent = () => {
 
 					})
 					.catch((error) => {
-						if (error.status === 401){
-							setError({
-								Status: true,
-								Type: 401
-							})
-							console.error(error)
-						} else {
-							setError({
-								Status: true,
-								Type: 500
-							})
-							console.error(error)
-						}
+						setError(error)
 					})
 				})()
 				
-				// axios.post("/new",{
-				// 	Contents: CheckListItems,
-				// 	Type: "CheckList",
-				// 	Color: CurrentColor
-				// },{
-				// 	headers : {
-				// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-				// 	},
-				// }).then((res) => console.log(res.data))
-
-				
-			
 			}
-
 		}
-
 	}
 
 	// **********************************************************************************************
@@ -449,27 +334,9 @@ export const TaskComponent = () => {
 
 			})
 			.catch((error) => {
-				if (error.status === 401){
-					setError({
-						Status: true,
-						Type: 401
-					})
-					console.error(error)
-				} else {
-					setError({
-						Status: true,
-						Type: 500
-					})
-					console.error(error)
-				}
+				setError(error)
 			})
 		})()
-
-		// axios.post("/delete",data,{
-		// 	headers : {
-		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-		// 	},
-		// }).then((res) => console.log(res.data))
 		
 	}
 
@@ -487,19 +354,7 @@ export const TaskComponent = () => {
 				clearInterval(DeleteModalInterval) // When undo action is performed the timer is cleared so as to not interfere the next delete action
 			})
 			.catch((error) => {
-				if (error.status === 401){
-					setError({
-						Status: true,
-						Type: 401
-					})
-					console.error(error)
-				} else {
-					setError({
-						Status: true,
-						Type: 500
-					})
-					console.error(error)
-				}
+				setError(error)
 			})
 		})()
 
@@ -512,34 +367,9 @@ export const TaskComponent = () => {
 				setDeletedTasks((prev) => prev.filter((item) => item !== DeletedTasks[DeletedTasks.length-1]))
 			})
 			.catch((error) => {
-				if (error.status === 401){
-					setError({
-						Status: true,
-						Type: 401
-					})
-					console.error(error)
-				} else {
-					setError({
-						Status: true,
-						Type: 500
-					})
-					console.error(error)
-				}
+				setError(error)
 			})
 		})()
-
-		
-
-		// axios.post("/new",{
-		// 	Heading: DeletedTasks[0].Heading,
-		// },{
-		// 	headers : {
-		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-		// 	},
-		// }).then((res) => console.log(res.data))
-
-		
-
 
 	}
 
@@ -554,30 +384,9 @@ export const TaskComponent = () => {
 				ModifiedItem: ModifiedItem,
 			}).then((res) => console.log(res.data))
 			.catch((error) => {
-				if (error.status === 401){
-					setError({
-						Status: true,
-						Type: 401
-					})
-					console.error(error)
-				} else {
-					setError({
-						Status: true,
-						Type: 500
-					})
-					console.error(error)
-				}
+				setError(error)
 			})
 		})()
-
-		// axios.post("/update",{
-		// 	OriginalItem: OriginalItem,
-		// 	ModifiedItem: ModifiedItem,
-		// },{
-		// 	headers : {
-		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
-		// 	},
-		// }).then((res) => console.log(res.data))
 
 		// After updating, inorder for fast update we are updating the item from the
 		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
