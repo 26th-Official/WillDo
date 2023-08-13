@@ -5,6 +5,8 @@ import './App.css'
 import { TaskComponent } from './Components/TaskComponent'
 import { HomeComponent } from './Components/HomeComponent';
 import { ErrorComponent } from './Components/ErrorComponent';
+import TrashComponent from './Components/TrashComponent';
+
 import SignInComponent from './Authentication/Components/SignInComponent'
 import SignUpComponent from './Authentication/Components/SignUpComponent'
 import ResetPasswordComponent from './Authentication/Components/ResetPasswordComponent';
@@ -19,6 +21,13 @@ function App() {
 	useEffect(() => {
 		localStorage.setItem("Authstate",Authstate)
 	}, [Authstate])
+
+	// useEffect(() => {
+	// 	if (Authstate && window.location.pathname == "/trash") {
+	// 		console.warn("TrashPage")
+	// 		setTrashPage(true)
+	// 	}
+	// })
 
 	return (
 		<AuthContext.Provider value={{ Authstate, setAuthstate, UserID, setResetPassword }}>

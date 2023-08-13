@@ -5,11 +5,11 @@ import axios from "../Modules/axios";
 import AuthContext from "../Authentication/Components/AuthContext";
 import Convert2Dict from "../Modules/Utility";
 
-export function TokenRefresh(Request, Method="GET", Payload={}){
+export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 	
 	return new Promise((myresolve,myreject) => {
 
-		const Parameters = { UserID : localStorage.getItem("UserID")}
+		const Parameters = {...Params, UserID : localStorage.getItem("UserID")}
 		
 		if (Method === "POST"){
 			axios.post(Request, Payload, {
@@ -69,21 +69,23 @@ export function TokenRefresh(Request, Method="GET", Payload={}){
 	})
 }
 
-export function DeleteTaskModal({UndoTask}) {
+export function DeleteTaskModal({UndoTask, DeleteLoading}) {
 	return (
 	<div className="fixed w-full h-[60px] bottom-1 z-[90] p-2 right-0 cursor-pointer">
 		<div className="bg-primary w-full border border-red-500 h-[50px] p-5 rounded-md flex items-center justify-between ">
 			<p className="text-lg">Task Deleted</p>
-			<div onClick={UndoTask} className="flex items-center text-base hover:animate-pulse hover:text-green-400"> <i className="fas fa-arrow-rotate-left px-1" aria-hidden="true"></i> Undo</div>
+			<button onClick={UndoTask} disabled={DeleteLoading} className="flex items-center text-base hover:animate-pulse hover:text-green-400"> 
+				<i className={`${DeleteLoading ? "fas fa-circle-notch animate-spin text-green-400" : "fas fa-arrow-rotate-left"} px-1`} aria-hidden="true"></i> Undo
+			</button>
 		</div>
 	</div>
 )}
 
 export function ErrorModal({ErrorType}) {
-	const {Authstate, setAuthstate} = useContext(AuthContext)
+	const {setAuthstate} = useContext(AuthContext)
 	const Navigate = useNavigate()
 
-	function SignOut({setAuthstate}){
+	function SignOut(){
 		axios.get("/signout").then((res) => {
 			console.log(res.data)
 			if (res.status == 200){
@@ -162,36 +164,40 @@ export function ErrorModal({ErrorType}) {
 	}
 }
 
-export function TaskOptions({ setCurrentColor, CustomClass, setEditTask, setEditTaskValue, item, setEditCheckBoxTask, setCheckListItems, index, DeleteTask }) {
+export function TaskOptions({DeleteLoading, setCurrentColor, CustomClass, setEditTask, setEditTaskValue, item, setEditCheckBoxTask, setCheckListItems, index, DeleteTask }) {
 	return (
 		<div className={`${CustomClass} hidden m-[-40px] group-hover:flex flex-col items-center justify-around text-background bg-white w-10`}>
-			<i
-				onClick={() => {
-					if (item.Type === "CheckList"){
-						setEditTask(true); // This is to set the EditTask state to true to open the editting page
-						setEditCheckBoxTask(true)
-						setCheckListItems({
-							...(JSON.parse(JSON.stringify(item))),
-							Index: index,
-							OriginalItem: JSON.parse(JSON.stringify(item)),
-						})
-						setCurrentColor(item.Color)
-					} else {
-						// This is to set the EditTask state to true to open the editting page
-						setEditTask(true); // The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
+			<button>
+				<i
+					onClick={() => {
+						if (item.Type === "CheckList"){
+							setEditTask(true); // This is to set the EditTask state to true to open the editting page
+							setEditCheckBoxTask(true)
+							setCheckListItems({
+								...(JSON.parse(JSON.stringify(item))),
+								Index: index,
+								OriginalItem: JSON.parse(JSON.stringify(item)),
+							})
+							setCurrentColor(item.Color)
+						} else {
+							// This is to set the EditTask state to true to open the editting page
+							setEditTask(true); // The EditTaskValue state is used to store the Original, Modified as well as the Index of the item in the form of Dict
 
-						setEditTaskValue({
-							OriginalItem: JSON.parse(JSON.stringify(item)),
-							ModifiedItem: JSON.parse(JSON.stringify(item)),
-							Index: index,
-						});
-						setCurrentColor(item.Color)
-					}
-				}}
-				className="fas fa-pen p-1 hover:text-orange-400"></i>
-			<i
-				onClick={() => DeleteTask(item)}
-				className="fas fa-trash p-1 hover:text-red-500"></i>
+							setEditTaskValue({
+								OriginalItem: JSON.parse(JSON.stringify(item)),
+								ModifiedItem: JSON.parse(JSON.stringify(item)),
+								Index: index,
+							});
+							setCurrentColor(item.Color)
+						}
+					}}
+					className="fas fa-pen p-1 hover:text-orange-400"></i>
+			</button>
+			<button disabled={DeleteLoading}>
+				<i
+					onClick={() => DeleteTask(item)}
+					className={`${DeleteLoading ? "fas fa-circle-notch animate-spin text-red-500" : "fas fa-trash"} p-1 hover:text-red-500`}></i>
+			</button>
 		</div>
 	);
 }

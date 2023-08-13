@@ -29,6 +29,7 @@ from pprint import pprint
 
 # =====================================
 # For accessing the Mongo DB
+from pymongo import UpdateOne
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 # =====================================
@@ -68,8 +69,8 @@ def PostData():
     pprint(data)
     
     UserID = { "UserID" : (request.args.get("UserID"))}
-    
     TaskID = int(datetime.now().timestamp())
+    
     collection.update_one(UserID,{
         "$push" : {"Tasks" : {**data, "TaskID" : TaskID}}
     })
@@ -90,20 +91,99 @@ def DeleteData():
     data = request.get_json()
     pprint(data)
     
-    UserID = { "UserID" : (request.args.get("UserID"))}
+    RequestArguments = request.args.to_dict()
+    UserID = {"UserID" : RequestArguments["UserID"]}
+    TaskID = int(datetime.now().timestamp())
     
-    collection.update_one(UserID,
-    {
-        "$pull" : {"Tasks" : {"TaskID" : data["TaskID"]}}
-    })
+    # DeleteType has 3 options "fromTasks", "fromTrash" and "fromTrashAll"
+    if RequestArguments["DeleteType"] == "fromTasks":
+        Updates = []
+        
+        Updates.append(
+            UpdateOne(UserID,
+            {
+                "$pull" : {"Tasks" : {"TaskID" : data["TaskID"]}}
+            })
+        )
+        Updates.append(
+            UpdateOne(UserID,
+            {
+                "$push" : {"DeletedTasks" : {**data, "TaskID" : TaskID}}
+            })
+        )
+        
+        collection.bulk_write(Updates)
+        
+        response = jsonify({
+            "Status" : "success",
+            "Operation" : "Task Deleted"
+        })
+        
+        return response,200
+    
+    elif RequestArguments["DeleteType"] == "fromTrashAll":
+        
+        collection.update_one(UserID,
+        {
+            "$set" : {"DeletedTasks" : []}
+        })
+        
+        response = jsonify({
+            "Status" : "success",
+            "Operation" : "All Trash Deleted"
+        })
+        
+        return response,200
+    
+    elif RequestArguments["DeleteType"] == "fromTrash":
+        collection.update_one(UserID,
+        {
+            "$pull" : {"DeletedTasks" : {"TaskID" : data["TaskID"]}}
+        })
+                
+        response = jsonify({
+            "Status" : "success",
+            "Operation" : "Task Deleted Permanently"
+        })
+        
+        return response,200
+    
+# To retreive deleted task and add them to main tasks in DB
+@app.route("/retreive", methods=["POST"])
+@jwt_required()
+def RetreiveData():
+    data = request.get_json()
+    pprint(data)
+    
+    RequestArguments = request.args.to_dict()
+    UserID = {"UserID" : RequestArguments["UserID"]}
+    TaskID = int(datetime.now().timestamp())
+    
+    Updates = []
+    
+    Updates.append(
+        UpdateOne(UserID,
+        {
+            "$push" : {"Tasks" : {**data, "TaskID" : TaskID}}
+        })
+    )
+        
+    Updates.append(
+        UpdateOne(UserID,
+        {
+             "$pull" : {"DeletedTasks" : {"TaskID" : data["TaskID"]}}
+        })
+    )
+    
+    collection.bulk_write(Updates)
     
     response = jsonify({
         "Status" : "success",
-        "Operation" : "Task Deleted"
+        "Operation" : "Task Retreived"
     })
     
     return response,200
-
+    
 
 # This is to update data in DB
 @app.route("/update", methods=["POST"])
@@ -141,12 +221,13 @@ def UpdateData():
 def Fetch():    
     UserID = { "UserID" : (request.args.get("UserID"))}
     
-    Tasks = collection.find_one(UserID)["Tasks"]
+    Results = collection.find_one(UserID)
         
     response = jsonify({
         "Status" : "success",
         "Operation" : "Tasks Fetched",
-        "Data" : Tasks
+        "Tasks" : Results["Tasks"],
+        "DeletedTasks" : Results["DeletedTasks"]
     })
     return response,200
 
@@ -177,7 +258,8 @@ def SignUp():
     
     collection.insert_one({
         "UserID" : str(PostResult.insertedTaskID),
-        "Tasks" : []
+        "Tasks" : [],
+        "DeletedTasks" : []
     })
     
     response = jsonify({

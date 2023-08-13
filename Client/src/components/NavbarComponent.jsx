@@ -1,27 +1,75 @@
-export function NavbarComponent({ setMenuBarStatus, setAddTask }) {
+import { useState } from "react"
+import { TokenRefresh } from "./AdditionalComponents"
+import { useNavigate } from "react-router-dom"
+
+export function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setAddTask, setError, setDeletedTasks, DeletedTasks }) {
+    
+    // Its for indicating the loading while the all the Trash tasks are deleting
+	const [AllDeleteLoading, setAllDeleteLoading] = useState(false)
+
+    function DeleteTask() {
+        if (DeletedTasks.length === 0) {
+            return
+        }
+        
+		(async () => {
+            setAllDeleteLoading(true)
+			await TokenRefresh("/delete","POST",{}, {DeleteType : "fromTrashAll"})
+			.then((res) => {
+                setAllDeleteLoading(false)
+				console.log(res.data)
+                setDeletedTasks([])
+			})
+			.catch((error) => {
+				if (error.status === 401){
+					setError({
+						Status: true,
+						Type: 401
+					})
+					console.error(error)
+				} else {
+					setError({
+						Status: true,
+						Type: 500
+					})
+					console.error(error)
+				}
+			})
+		})()
+		
+	}
+
     
     return (
     <div className="fixed w-full top-0 right-0 left px-2 z-[100] py-5 bg-background/50 backdrop-blur-sm ">
         <div className="flex justify-center items-center">
-            {
-                /* This is the Menu Button and it controls the "MenuBarStatus" */
-            }
+            { /* This is the Menu Button and it controls the "MenuBarStatus" */ }
             <i onClick={() => {
                 setMenuBarStatus(true);
             }} className="fa fa-bars absolute left-0 p-0.5 text-2xl mx-6 mt-1 text-white/50
                   hover:text-white/100 mr-auto" aria-hidden="true"></i>
 
-            <p className="font-Shadows_Into_Light text-6xl max-sm:text-5xl max-sm:pl-9">
-                Task I Will Do
+            <p onClick={() => {
+                if (TrashPage) {
+                    setTrashPage(false)
+                }
+            }} className="font-Shadows_Into_Light text-6xl max-sm:text-5xl max-sm:pl-9 cursor-pointer">
+                {!TrashPage ? "Task I Will Do" : "Trash Bin"}
             </p>
 
-            {
-                /* THis the task add button when controls the "AddTask" state */
-            }
-            <i onClick={() => {
-                setAddTask(true);
-            }} className="fa fa-plus-circle absolute right-0 p-2 text-2xl mx-6 mt-1 text-white/50
-                  hover:text-white/100 max-sm:hidden" aria-hidden="true"></i>
+
+            {TrashPage ? (
+                <button disabled={AllDeleteLoading} onClick={() => {
+                    DeleteTask()
+                }} className={`${AllDeleteLoading ? "fas fa-circle-notch animate-spin text-red-500" : "fas fa-trash"} absolute right-0 p-2 text-2xl mx-6 mt-1 text-white/50
+                hover:text-red-500 max-sm:hidden`} aria-hidden="true"></button>
+            ) : (
+                <i onClick={() => {
+                    setAddTask(true)
+                }} className="fa fa-plus-circle absolute right-0 p-2 text-2xl mx-6 mt-1 text-white/50
+                hover:text-white/100 max-sm:hidden" aria-hidden="true"></i>
+            )}
+
         </div>
     </div>);
 }

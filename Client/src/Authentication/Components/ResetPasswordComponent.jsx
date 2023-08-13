@@ -47,7 +47,7 @@ const ResetPasswordComponent = () => {
         setLoading(true);
         axios.post("/reset",UserData,{
             headers: {
-                "Content-Type": "application/json",
+            "Content-Type": "application/json",
             },
             params: { UserID : UserID}
         }).then((res) => {
@@ -251,6 +251,17 @@ const ResetPasswordComponent = () => {
                             aria-hidden="true"></i>{" "}
                     </button>
                     
+                </div>
+                <div>
+                    <p className="text-sm inline"> Here by Mistake ? </p> |
+                    <p
+                        onClick={() => {
+                            Navigate("/");
+                        }}
+                        className="group text-sm pl-1 items-center inline-flex hover:border-b hover:animate-pulse cursor-pointer">
+                        Home{" "}
+                        <i className="fas fa-arrow-right-long pl-1 text-sm group-hover:text-green-500"></i>
+                    </p>
                 </div>
             </div>
         </div>

@@ -13,6 +13,7 @@ import { HuePicker } from 'react-color';
 import { DeleteTaskModal, ErrorModal, TaskOptions, TokenRefresh } from './AdditionalComponents';
 import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
+import TrashComponent from "./TrashComponent";
 import AuthContext from "../Authentication/Components/AuthContext";
 
 // **********************************************************************************************
@@ -21,9 +22,6 @@ export const TaskComponent = () => {
 	// =======================================================
 	const [isInternet,setisInternet] = useState(navigator.onLine)
 	// =======================================================
-	const { UserID } = useContext(AuthContext)
-	// =======================================================
-	// let access_token = document.cookie.split(";").find((item) => item.startsWith("access_token")).split("=")[1]
 	// to store the tasks from db
 	const [Tasks, setTasks] = useState([]);
 
@@ -68,6 +66,12 @@ export const TaskComponent = () => {
 	// It stores the interval for the delete modal, We are storing it because we want to clear the interval when the undo action is performed
 	// if we don't clear the Interval it will automatically the Delete Modal with the remaining time the next time we delete a task
 	const [DeleteModalInterval, setDeleteModalInterval] = useState()
+	
+	// Its for indicating the loading while the task is deleting in the "TaskOptions" inside of the tasks
+	const [DeleteLoading, setDeleteLoading] = useState(false)
+
+	// This indicates whether the Trashpage should appear or not
+	const [TrashPage, setTrashPage] = useState(false)
 	// =======================================================
 
 	// =======================================================
@@ -137,10 +141,15 @@ export const TaskComponent = () => {
 			(async () => {
 				await TokenRefresh("/fetch").then((res) => 
 				{	
-					res = res["data"]["Data"]
-					if(!isEqual(Tasks,res)){
-						setTasks(res)
+					res = res["data"]
+					if(!isEqual(Tasks,res["Tasks"])){
+						setTasks(res["Tasks"])
 					}
+
+					if(!isEqual(DeletedTasks,res["DeletedTasks"])){
+						setDeletedTasks(res["DeletedTasks"])
+					}
+
 					setFetched(true);
 					setRefetch(false);
 					setError(DefaultError)
@@ -219,7 +228,7 @@ export const TaskComponent = () => {
 	// This is to control the delete modal visibility
 	useEffect(() => {
 		// if the "DeleteModelStatus" is true we set the Interval for 10 seconds and then set the "DeleteModelStatus" to false
-		if (DeleteModelStatus){
+		if (DeleteModelStatus && !DeleteLoading){
 			const Interval = setInterval(() => {
 				setDeleteModelStatus(false)
 			},10000)
@@ -264,7 +273,7 @@ export const TaskComponent = () => {
 	// This is for submitting the task after typing the in the Add task div
 	// when clicked it first adds the task locally and then when task update signal received from the
 	// backend the whole data is refetched so as to not have any latency issues
-	function SubmitTask() {
+	function CreateTask() {
 
 		// This will handle the checklist type tasks
 		// "AddCheckBoxTask" is true when the user clicks the "Add Checklist" button in the add task div else its a normal text task
@@ -418,10 +427,27 @@ export const TaskComponent = () => {
 
 	// This is to delete the task from the DB
 	function DeleteTask(data) {
-
 		(async () => {
-			await TokenRefresh("/delete","POST",data)
-			.then((res) => console.log(res.data))
+			setDeleteLoading(true)
+			await TokenRefresh("/delete","POST",data, {DeleteType : "fromTasks"})
+			.then((res) => {
+				setDeleteLoading(false)
+				console.log(res.data)
+
+				// After deleting, inorder for fast update we are removing the item from the
+				// "Tasks" state as well so we don't have to wait for the backend to trigger a update
+
+				const NewTaskList = Tasks.filter((item) => item !== data);
+				setTasks(NewTaskList);
+				
+				if (DeletedTasks.length === 0){
+					setDeletedTasks([data]);
+				} else {
+					setDeletedTasks((prev) => [...prev,data]);
+				}
+				setDeleteModelStatus(true)
+
+			})
 			.catch((error) => {
 				if (error.status === 401){
 					setError({
@@ -444,22 +470,22 @@ export const TaskComponent = () => {
 		// 		"X-CSRF-TOKEN" : (document.cookie).split(";")[0].split("=")[1]
 		// 	},
 		// }).then((res) => console.log(res.data))
-
-		// After deleting, inorder for fast update we are removing the item from the
-		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
-		const NewTaskList = Tasks.filter((item) => item !== data);
-		setTasks(NewTaskList);
-		setDeletedTasks([data]);
-		setDeleteModelStatus(true)
+		
 	}
 
 	// This is to undo the last delete action
 	function UndoTask(){
-
 		(async () => {
+			setDeleteLoading(true)
 			await TokenRefresh("/new","POST",{
-				...(DeletedTasks[0])
-			}).then((res) => console.log(res.data))
+				...(DeletedTasks[DeletedTasks.length-1]),
+			}).then((res) => {
+				console.log(res.data)
+				setTasks((prev) => [...prev,DeletedTasks[DeletedTasks.length-1]])
+				setDeleteLoading(false)
+				setDeleteModelStatus(false)
+				clearInterval(DeleteModalInterval) // When undo action is performed the timer is cleared so as to not interfere the next delete action
+			})
 			.catch((error) => {
 				if (error.status === 401){
 					setError({
@@ -477,6 +503,33 @@ export const TaskComponent = () => {
 			})
 		})()
 
+		(async () => {
+			await TokenRefresh("/delete","POST",{
+				...(DeletedTasks[DeletedTasks.length-1])
+			},{DeleteType : "fromTrash"})
+			.then((res) => {
+				console.log(res.data)
+				setDeletedTasks((prev) => prev.filter((item) => item !== DeletedTasks[DeletedTasks.length-1]))
+			})
+			.catch((error) => {
+				if (error.status === 401){
+					setError({
+						Status: true,
+						Type: 401
+					})
+					console.error(error)
+				} else {
+					setError({
+						Status: true,
+						Type: 500
+					})
+					console.error(error)
+				}
+			})
+		})()
+
+		
+
 		// axios.post("/new",{
 		// 	Heading: DeletedTasks[0].Heading,
 		// },{
@@ -485,9 +538,9 @@ export const TaskComponent = () => {
 		// 	},
 		// }).then((res) => console.log(res.data))
 
-		setTasks((prev) => [...prev,DeletedTasks[0]])
-		setDeleteModelStatus(false)
-		clearInterval(DeleteModalInterval) // When undo action is performed the timer is cleared so as to not interfere the next delete action
+		
+
+
 	}
 
 	// **********************************************************************************************
@@ -541,7 +594,7 @@ export const TaskComponent = () => {
 		if (item.Type === "CheckList") {
 			return (
 				<div className="flex group">
-					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions DeleteLoading={DeleteLoading} setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 					<div className="flex-1 group-hover:max-sm:ml-5">
 						{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
 								<div onClick={() => {
@@ -555,15 +608,15 @@ export const TaskComponent = () => {
 							</div>
 						)}
 					</div>
-					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions DeleteLoading={DeleteLoading} setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 				</div>
 			)
 		} else {
 			return (
 				<div className="flex justify-center">
-					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions DeleteLoading={DeleteLoading} setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"sm:!hidden mr-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 					<p className="flex-1">{item.Heading}</p>
-					<TaskOptions setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
+					<TaskOptions DeleteLoading={DeleteLoading} setCurrentColor={setCurrentColor} setEditCheckBoxTask={setEditCheckBoxTask} setCheckListItems={setCheckListItems} CustomClass={"max-sm:!hidden ml-auto"} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} item={item} UpdateTask={UpdateTask} index={index} DeleteTask={DeleteTask} />
 				</div>
 			)
 		}	
@@ -575,12 +628,12 @@ export const TaskComponent = () => {
 		<div className="relative">
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Nav Bar +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
-			<NavbarComponent setMenuBarStatus={setMenuBarStatus} setAddTask={setAddTask}  />
+			<NavbarComponent DeletedTasks={DeletedTasks} setError={setError} setDeletedTasks={setDeletedTasks} TrashPage={TrashPage} setTrashPage={setTrashPage} setMenuBarStatus={setMenuBarStatus} setAddTask={setAddTask}  />
 
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Menu Bar +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 
 			{MenuBarStatus && (
-				<MenubarComponent setMenuBarStatus={setMenuBarStatus}  />
+				<MenubarComponent setTrashPage={setTrashPage} TrashPage={TrashPage} setMenuBarStatus={setMenuBarStatus}  />
 			)}
 
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Mobile Task Add Button +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
@@ -594,7 +647,7 @@ export const TaskComponent = () => {
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task Delete Modal +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
 			
 			{DeleteModelStatus && (
-				<DeleteTaskModal  UndoTask={UndoTask}  />
+				<DeleteTaskModal DeleteLoading={DeleteLoading} UndoTask={UndoTask}  />
 			)}
 
 			{/* +++++++++++++++++++++++++++++++++++++++++++++++++ Task's Area +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
@@ -667,7 +720,7 @@ export const TaskComponent = () => {
 								hover:text-white/100"> <i className="fa fa-plus text-xs px-1" aria-hidden="true"></i>Add Item</p>
 							</div>
 						)}
-						<div className="h-1" />
+						<div className="h-5" />
 						<div className="flex mx-auto">
 							<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
 								<img width={"25px"} src="/color_picker.png"/>
@@ -677,7 +730,7 @@ export const TaskComponent = () => {
 								disabled={isAddTaskLoading}
 								onClick={(e) => {
 									console.warn("Yessss")
-									SubmitTask()
+									CreateTask()
 									setisAddTaskLoading(true)
 								}}
 								className={`${isAddTaskLoading && "!bg-green-500/70 cursor-not-allowed"} w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500`}>
@@ -731,7 +784,7 @@ export const TaskComponent = () => {
 								</div>
 							)}
 						</div>
-						<div className="h-1" />
+						<div className="h-3" />
 						{ColorPickerState && (
 							<div className="flex items-center space-x-3 mx-auto">
 								<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
@@ -798,7 +851,7 @@ export const TaskComponent = () => {
 								</div>
 								{/* This will add new item to the checklist */}
 								
-								<div className="h-1" />
+								<div className="h-5" />
 								<div className="flex mx-auto">
 									<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
 										<img width={"25px"} src="/color_picker.png"/>
@@ -834,7 +887,7 @@ export const TaskComponent = () => {
 											aria-hidden="true"></i>{" "}
 									</div>
 								</div>
-								<div className="h-1" />
+								<div className="h-3" />
 								{ColorPickerState && (
 									<div className="flex items-center space-x-3 mx-auto">
 										<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
@@ -878,7 +931,7 @@ export const TaskComponent = () => {
 									}}
 									rows={1}
 									className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
-								<div className="h-1" />
+								<div className="h-5" />
 								<div className="flex mx-auto">
 									<div onClick={() => {setColorPickerState(!ColorPickerState)}} className="w-[35px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-white group">
 										<img width={"25px"} src="/color_picker.png"/>
@@ -909,7 +962,7 @@ export const TaskComponent = () => {
 											aria-hidden="true"></i>{" "}
 									</div>
 								</div>
-								<div className="h-1" />
+								<div className="h-3" />
 								{ColorPickerState && (
 									<div className="flex items-center space-x-3 mx-auto">
 										<div className="bg-secondary px-2 py-1 pb-0.5 rounded-md group">
@@ -933,47 +986,53 @@ export const TaskComponent = () => {
 					<ErrorModal ErrorType={Error.Type} />
 				) : (
 
-					// +++++++++++++++++++++++++++++++++++++++++++++++++ Nothing Page and Loading Page +++++++++++++++++++++++++++++++++++++++++++++++++
+					// +++++++++++++++++++++++++++++++++++++++++++++++++ Tasks and Trash Section +++++++++++++++++++++++++++++++++++++++++++++++++
 
 					<div>
-						{/* In here it first checks if the "Tasks" state has any content, */}
-						{/* if it has it will displays it */}
-						{Object.keys(Tasks).length === 0 ? (
-							<>
-								{/* If the "Tasks" state is empty, it checks if the "Fetched state is false or true" */}
-								{/* If it false it shows the loading animation else it assumes that there is no */}
-								{/* task in the database */}
-								{Fetched ? (
-									<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
-										<div>
-											<b>Nothing Here !!</b>
-										</div>
-										<div>
-											Add Some by Clicking the{" "}
-											<i
-												className="fa fa-plus-circle px-1"
-												aria-hidden="true"></i>
-											👆
-										</div>
-									</div>
-								) : (
-									<i
-										className="fas fa-arrows-rotate text-2xl text-white/50 m-5 animate-spin"
-										aria-hidden="true"></i>
-								)}
-							</>
+						{TrashPage ? (
+							<TrashComponent setTasks={setTasks} isAddTaskLoading={isAddTaskLoading} setisAddTaskLoading={setisAddTaskLoading} setDeleteLoading={setDeleteLoading} DeleteLoading={DeleteLoading} DeletedTasks={DeletedTasks} setDeletedTasks={setDeletedTasks} setError={setError} />
 						) : (
-							// This accesses the contents in the fetched json data
-							<>
-								<div className="p-5" />  {/* This is to add some space between the nav bar and the tasks */}
-								{/* ++++++++++++++++++++++++++++++++++++++++ Pinned Tasks ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
-								{Tasks.map((item, index) => 
-									<div key={index} style={{backgroundColor: item.Color}} className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
-										<TaskDisplay item={item} index={index} setCurrentColor={setCurrentColor} UpdateTask={UpdateTask} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} DeleteTask={DeleteTask}  />
-									</div>
-								)}
+							<div>
+								{/* In here it first checks if the "Tasks" state has any content, */}
+								{/* if it has it will displays it */}
+								{Tasks.length === 0 ? (
+									<>
+										{/* If the "Tasks" state is empty, it checks if the "Fetched state is false or true" */}
+										{/* If it false it shows the loading animation else it assumes that there is no */}
+										{/* task in the database */}
+										{Fetched ? (
+											<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
+												<div>
+													<b>Nothing Here !!</b>
+												</div>
+												<div>
+													Add Some by Clicking the{" "}
+													<i
+														className="fa fa-plus-circle px-1"
+														aria-hidden="true"></i>
+													👆
+												</div>
+											</div>
+										) : (
+											<i
+												className="fas fa-arrows-rotate text-2xl text-white/50 m-5 animate-spin"
+												aria-hidden="true"></i>
+										)}
+									</>
+								) : (
+									// This accesses the contents in the fetched json data
+									<>
+										<div className="p-5" />  {/* This is to add some space between the nav bar and the tasks */}
+										{/* ++++++++++++++++++++++++++++++++++++++++ Pinned Tasks ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */}
+										{Tasks.map((item, index) => 
+											<div key={index} style={{backgroundColor: item.Color}} className="group relative overflow-hidden bg-primary p-10 flex flex-col rounded-md border my-5">
+												<TaskDisplay item={item} index={index} setCurrentColor={setCurrentColor} UpdateTask={UpdateTask} setEditTask={setEditTask} setEditTaskValue={setEditTaskValue} DeleteTask={DeleteTask}  />
+											</div>
+										)}
 
-							</>
+									</>
+								)}
+							</div>
 						)}
 					</div>
 				)}

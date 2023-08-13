@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toInteger } from "lodash";
 import { TokenRefresh } from "./AdditionalComponents";
 
-export function MenubarComponent({ setMenuBarStatus }) {
+export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) {
 	const { setAuthstate, setResetPassword } = useContext(AuthContext);
 	const [Settings, setSettings] = useState(false);
 
@@ -139,9 +139,19 @@ export function MenubarComponent({ setMenuBarStatus }) {
 								aria-hidden="true"></i>
 						</button>
 					</div>
-					<button className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">
-						Trash
-					</button>
+					{!TrashPage ? (
+						<button onClick={() => {
+							setTrashPage(true)
+						}} className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">
+							Trash
+						</button>
+					) : (
+						<button onClick={() => {
+							setTrashPage(false)
+						}} className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">
+							Tasks
+						</button>
+					)}
 					<button
 						onClick={() => setSettings(true)}
 						className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">
