@@ -4,7 +4,7 @@ import AuthContext from "../Authentication/Components/AuthContext";
 import axios from "../Modules/axios";
 
 export default function HomeComponent() {
-	const {Authstate, setAuthstate} = useContext(AuthContext)
+	const {Authstate, setAuthstate, setGuestMode, GuestMode} = useContext(AuthContext)
 
 	const Navigate = useNavigate()
 
@@ -33,36 +33,72 @@ export default function HomeComponent() {
 				<div className="h-8" />
 				
 				{!Authstate ? (
-					<div className=" flex items-center justify-center mx-auto flex-1 max-w-[500px] max-sm:w-[300px] max-md:w-[300px] max-lg:w-[300px]">
+					<div className="flex-1">
+						<div className=" flex items-center justify-center mx-auto flex-1 max-w-[500px] max-sm:w-[270px] max-md:w-[300px] max-lg:w-[300px]">
+							<p onClick={() => {
+								Navigate("/signup");
+							}} className="bg-green-500 border-[0.5px] max-sm:text-xl mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-green-500/70 cursor-pointer">
+								Sign Up
+							</p>
+							<p onClick={() => {
+								Navigate("/signin")
+							}} className="bg-orange-500 border-[0.5px] max-sm:text-xl mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-orange-500/70 cursor-pointer">
+								Sign In
+							</p>
+						</div>
 						<p onClick={() => {
-							Navigate("/signup");
-						}} className="bg-green-500 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-green-500/70 cursor-pointer">
-							Sign Up
-						</p>
-						<p onClick={() => {
-							Navigate("/signin")
-						}} className="bg-orange-500 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-orange-500/70 cursor-pointer">
-							Sign In
+							setGuestMode(true)
+							if (localStorage.getItem("Tasks") === null){
+								localStorage.setItem("Tasks", JSON.stringify([]))
+								localStorage.setItem("DeletedTasks", JSON.stringify([]))
+							}
+							Navigate("/tasks")
+						}} className="group text-sm pl-1 items-center inline-flex hover:border-b hover:animate-pulse cursor-pointer">
+							Guest Mode{" "}
+							<i className="fas fa-arrow-right-long pl-1 text-sm group-hover:text-yellow-400"></i>
 						</p>
 					</div>
 				) : (
-					<div className=" flex items-center justify-center mx-auto flex-1 max-w-[500px] max-sm:w-[300px] max-md:w-[300px] max-lg:w-[300px]">
-						<p onClick={() => {
-							Navigate("/tasks");
-						}} className="bg-blue-600 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-blue-600/70 cursor-pointer">
-							Tasks
-						</p>
-						<p onClick={() => {
-							axios.get("/signout").then((res) => {
-								console.log(res.data)
-								if (res.status == 200){
-									localStorage.setItem("Authstate", false)
-									setAuthstate(false)
+					<div className="flex-1">
+						<div className=" flex items-center justify-center mx-auto flex-1 max-w-[500px] max-sm:w-[300px] max-md:w-[300px] max-lg:w-[300px]">
+							<p onClick={() => {
+								Navigate("/tasks");
+							}} className="bg-blue-600 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-blue-600/70 cursor-pointer">
+								Tasks
+							</p>
+							<p onClick={() => {
+
+								if (!GuestMode){
+									axios.get("/signout").then((res) => {
+										console.log(res.data);
+										if (res.status == 200) {
+											localStorage.setItem("Authstate", false);
+											localStorage.setItem("UserID", "");
+											localStorage.setItem("SessionDuration", "");
+											setAuthstate(false);
+											Navigate("/");
+										}
+									});
+						
+								} else {
+									setGuestMode(false)
+									Navigate("/")
 								}
-							})
-							Navigate("/")
-						}} className="bg-red-500 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-red-500/70 cursor-pointer">
-							Sign Out
+								
+							}} className="bg-red-500 border-[0.5px] mx-2 w-1/2 my-4 p-2 text-3xl rounded-md hover:bg-red-500/70 cursor-pointer">
+								Sign Out
+							</p>
+						</div>
+						<p onClick={() => {
+							setGuestMode(true)
+							if (localStorage.getItem("Tasks") === null){
+								localStorage.setItem("Tasks", JSON.stringify([]))
+								localStorage.setItem("DeletedTasks", JSON.stringify([]))
+							}
+							Navigate("/tasks")
+						}} className="group text-sm pl-1 items-center inline-flex hover:border-b hover:animate-pulse cursor-pointer">
+							Guest Mode{" "}
+							<i className="fas fa-arrow-right-long pl-1 text-sm group-hover:text-yellow-400"></i>
 						</p>
 					</div>
 				)}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 
 import { omit, isEqual } from "lodash";
 
@@ -10,9 +10,13 @@ import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
 import TrashComponent from "./TrashComponent";
 
+import AuthContext from "../Authentication/Components/AuthContext";
+
 // **********************************************************************************************
 
-export default function TaskComponent0 (){
+export default function TaskComponent (){
+	// =======================================================
+	const { GuestMode } = useContext(AuthContext)
 	// =======================================================
 	const [isInternet,setisInternet] = useState(navigator.onLine)
 	// =======================================================
@@ -96,15 +100,26 @@ export default function TaskComponent0 (){
 	// ? =======================================================
 
 	useEffect(() => {
-		if (Tasks.length === 0 && !navigator.onLine){
-			setError({
-				Status: true,
-				Type: 503
-			})
+		if (Fetched){
+			localStorage.setItem("Tasks",JSON.stringify(Tasks))
+			localStorage.setItem("DeletedTasks",JSON.stringify(DeletedTasks))
 		}
-		else if (Tasks.length === 0 && navigator.onLine){
-			setError(DefaultError)
-			setRefetch(true)	
+	},[Tasks,DeletedTasks])
+
+	// ? =======================================================
+
+	useEffect(() => {
+		if (!GuestMode) {
+			if (Tasks.length === 0 && !navigator.onLine){
+				setError({
+					Status: true,
+					Type: 503
+				})
+			}
+			else if (Tasks.length === 0 && navigator.onLine){
+				setError(DefaultError)
+				setRefetch(true)	
+			}
 		}
 	},[isInternet])
 
@@ -130,28 +145,48 @@ export default function TaskComponent0 (){
 	
 	// for fetching the data from db for first time and as well as when updated
 	useEffect(() => {
-		if (Refetch) {
+		if (!GuestMode) {
+			if (Refetch) {
+				(async () => {
+					await TokenRefresh("/fetch").then((res) => 
+					{	
+						res = res["data"]
+						if(!isEqual(Tasks,res["Tasks"])){
+							setTasks(res["Tasks"])
+						}
+	
+						if(!isEqual(DeletedTasks,res["DeletedTasks"])){
+							setDeletedTasks(res["DeletedTasks"])
+						}
+	
+						setFetched(true);
+						setRefetch(false);
+						setError(DefaultError)
+	
+					}).catch((error) => {
+						setError(error)
+					})
+				})()
+			}
+		} else {
+			if (Refetch) {
+				const res = {
+					Tasks : JSON.parse(localStorage.getItem("Tasks")),
+					DeletedTasks : JSON.parse(localStorage.getItem("DeletedTasks"))
+				}
 
-			(async () => {
-				await TokenRefresh("/fetch").then((res) => 
-				{	
-					res = res["data"]
-					if(!isEqual(Tasks,res["Tasks"])){
-						setTasks(res["Tasks"])
-					}
+				if(!isEqual(Tasks,res["Tasks"])){
+					setTasks(res["Tasks"])
+				}
 
-					if(!isEqual(DeletedTasks,res["DeletedTasks"])){
-						setDeletedTasks(res["DeletedTasks"])
-					}
+				if(!isEqual(DeletedTasks,res["DeletedTasks"])){
+					setDeletedTasks(res["DeletedTasks"])
+				}
 
-					setFetched(true);
-					setRefetch(false);
-					setError(DefaultError)
-
-				}).catch((error) => {
-					setError(error)
-				})
-			})()
+				setFetched(true);
+				setRefetch(false);
+				setError(DefaultError)
+			}
 		}
 	}, [Refetch]);
 
@@ -207,103 +242,189 @@ export default function TaskComponent0 (){
 	// backend the whole data is refetched so as to not have any latency issues
 	function CreateTask() {
 
-		// This will handle the checklist type tasks
-		// "AddCheckBoxTask" is true when the user clicks the "Add Checklist" button in the add task div else its a normal text task
-		if (AddCheckBoxTask === false){
-			const Heading = AddTaskRef.current.value;
-			if (Heading === "") {
-				AddTaskRef.current.focus();
-				AddTaskRef.current.style.outline = "0.7px solid rgb(239,68,68)";
-				setisAddTaskLoading(false)
-			} else {
-				AddTaskRef.current.style.outline = "none";
-
-				(async () => {
-					await TokenRefresh("/new","POST",{
-						Heading: Heading,
-						Color: CurrentColor
-					}).then((res) => {
-
-						console.log(res.data)
-
-						setAddTask(false);
-						setisAddTaskLoading(false)
-						//  Adding the new task locally
-						setTasks([
-							...Tasks,
-							{
-								Heading: Heading,
-								Color: CurrentColor,
-								TaskID: res["data"].TaskID
-							},
-						])
-					})
-					.catch((error) => {
-						setError(error)
-					})
-				})()
-
-			}
-		} 
-
-		// This will handle the checklist type tasks
-		else {
-			let CheckListCount = 0 // This will count the number of checklist items that are not empty
-			let UpdatedCheckListItems = [...CheckListItems] // This will make a deep copy of the checklist items array
-			for (let i=0;i<CheckListItems.length;i++){
-				//  👇 This denotes the textbox inside the "CheckListTaskRef" as it has 3 childrens
-				if (CheckListTaskRef.current[i].children[1].value === ""){
-					CheckListTaskRef.current[i].children[1].focus()
-					CheckListTaskRef.current[i].children[1].style.outline = "0.7px solid rgb(239,68,68)"; // This will highlight the textbox which is empty
+		if (!GuestMode) {
+			setisAddTaskLoading(true)
+			// This will handle the checklist type tasks
+			// "AddCheckBoxTask" is true when the user clicks the "Add Checklist" button in the add task div else its a normal text task
+			if (AddCheckBoxTask === false){
+				const Heading = AddTaskRef.current.value;
+				if (Heading === "") {
+					AddTaskRef.current.focus();
+					AddTaskRef.current.style.outline = "0.7px solid rgb(239,68,68)";
 					setisAddTaskLoading(false)
 				} else {
-					CheckListCount += 1 // If the textbox is not empty we increment the count
-					CheckListTaskRef.current[i].children[1].style.outline = "none" // we remove the outline if the textbox is not empty
-					// 👇 we add the Checkbox data from the 2nd child of the "CheckListTaskRef" which is the "input checkbox"
-					UpdatedCheckListItems[i].Checked = CheckListTaskRef.current[i].children[0].checked 
-				}
-			}
-			
-			// If all the checklist items are not empty then we add the task to the db and locally
-			if (CheckListCount === CheckListItems.length){
-				console.log({
-					Contents: CheckListItems,
-					Type: "CheckList",
-					Color: CurrentColor
-				});
+					AddTaskRef.current.style.outline = "none";
 
-				(async () => {
-					await TokenRefresh("/new","POST",{
+					(async () => {
+						await TokenRefresh("/new","POST",{
+							Heading: Heading,
+							Color: CurrentColor
+						}).then((res) => {
+
+							console.log(res.data)
+
+							setAddTask(false);
+							setisAddTaskLoading(false)
+							//  Adding the new task locally
+							setTasks([
+								...Tasks,
+								{
+									Heading: Heading,
+									Color: CurrentColor,
+									TaskID: res["data"].TaskID
+								},
+							])
+						})
+						.catch((error) => {
+							setError(error)
+						})
+					})()
+
+				}
+			} 
+
+			// This will handle the checklist type tasks
+			else {
+				let CheckListCount = 0 // This will count the number of checklist items that are not empty
+				let UpdatedCheckListItems = [...CheckListItems] // This will make a deep copy of the checklist items array
+				for (let i=0;i<CheckListItems.length;i++){
+					//  👇 This denotes the textbox inside the "CheckListTaskRef" as it has 3 childrens
+					if (CheckListTaskRef.current[i].children[1].value === ""){
+						CheckListTaskRef.current[i].children[1].focus()
+						CheckListTaskRef.current[i].children[1].style.outline = "0.7px solid rgb(239,68,68)"; // This will highlight the textbox which is empty
+						setisAddTaskLoading(false)
+					} else {
+						CheckListCount += 1 // If the textbox is not empty we increment the count
+						CheckListTaskRef.current[i].children[1].style.outline = "none" // we remove the outline if the textbox is not empty
+						// 👇 we add the Checkbox data from the 2nd child of the "CheckListTaskRef" which is the "input checkbox"
+						UpdatedCheckListItems[i].Checked = CheckListTaskRef.current[i].children[0].checked 
+					}
+				}
+				
+				// If all the checklist items are not empty then we add the task to the db and locally
+				if (CheckListCount === CheckListItems.length){
+					console.log({
 						Contents: CheckListItems,
 						Type: "CheckList",
 						Color: CurrentColor
-					}).then((res) => {
+					});
 
-						console.log(res.data)
+					(async () => {
+						await TokenRefresh("/new","POST",{
+							Contents: CheckListItems,
+							Type: "CheckList",
+							Color: CurrentColor
+						}).then((res) => {
 
-						setAddTask(false);
+							console.log(res.data)
+
+							setAddTask(false);
+							setisAddTaskLoading(false)
+							setCheckListItems([{Heading: "",Checked: false}])
+							setAddCheckBoxTask(false)
+
+							//  Adding the new task locally
+							setTasks([
+								...Tasks,
+								{	
+									Contents: CheckListItems, // We are adding the checklist items to the "Contents" key
+									Type: "CheckList",
+									Color: CurrentColor,
+									TaskID: res["data"].TaskID
+								},
+							]);
+
+
+						})
+						.catch((error) => {
+							setError(error)
+						})
+					})()
+					
+				}
+			}
+		
+		} else {
+			
+			// This will handle the checklist type tasks
+			// "AddCheckBoxTask" is true when the user clicks the "Add Checklist" button in the add task div else its a normal text task
+			if (AddCheckBoxTask === false){
+				const Heading = AddTaskRef.current.value;
+				if (Heading === "") {
+					AddTaskRef.current.focus();
+					AddTaskRef.current.style.outline = "0.7px solid rgb(239,68,68)";
+				} else {
+					AddTaskRef.current.style.outline = "none";
+
+					const res = {
+						data: {
+							TaskID: Math.floor(new Date().getTime() / 1000)
+						}
+					}
+
+					setAddTask(false);
+					//  Adding the new task locally
+					setTasks([
+						...Tasks,
+						{
+							Heading: Heading,
+							Color: CurrentColor,
+							TaskID: res["data"].TaskID
+						},
+					])
+
+				}
+			} 
+
+			// This will handle the checklist type tasks
+			else {
+				let CheckListCount = 0 // This will count the number of checklist items that are not empty
+				let UpdatedCheckListItems = [...CheckListItems] // This will make a deep copy of the checklist items array
+				for (let i=0;i<CheckListItems.length;i++){
+					//  👇 This denotes the textbox inside the "CheckListTaskRef" as it has 3 childrens
+					if (CheckListTaskRef.current[i].children[1].value === ""){
+						CheckListTaskRef.current[i].children[1].focus()
+						CheckListTaskRef.current[i].children[1].style.outline = "0.7px solid rgb(239,68,68)"; // This will highlight the textbox which is empty
 						setisAddTaskLoading(false)
-						setCheckListItems([{Heading: "",Checked: false}])
-						setAddCheckBoxTask(false)
-
-						//  Adding the new task locally
-						setTasks([
-							...Tasks,
-							{	
-								Contents: CheckListItems, // We are adding the checklist items to the "Contents" key
-								Type: "CheckList",
-								Color: CurrentColor,
-								TaskID: res["data"].TaskID
-							},
-						]);
-
-
-					})
-					.catch((error) => {
-						setError(error)
-					})
-				})()
+					} else {
+						CheckListCount += 1 // If the textbox is not empty we increment the count
+						CheckListTaskRef.current[i].children[1].style.outline = "none" // we remove the outline if the textbox is not empty
+						// 👇 we add the Checkbox data from the 2nd child of the "CheckListTaskRef" which is the "input checkbox"
+						UpdatedCheckListItems[i].Checked = CheckListTaskRef.current[i].children[0].checked 
+					}
+				}
 				
+				// If all the checklist items are not empty then we add the task to the db and locally
+				if (CheckListCount === CheckListItems.length){
+					console.log({
+						Contents: CheckListItems,
+						Type: "CheckList",
+						Color: CurrentColor
+					});
+
+					const res = {
+						data: {
+							TaskID: Math.floor(new Date().getTime() / 1000)
+						}
+					}
+
+					setAddTask(false);
+					setisAddTaskLoading(false)
+					setCheckListItems([{Heading: "",Checked: false}])
+					setAddCheckBoxTask(false)
+
+					//  Adding the new task locally
+					setTasks([
+						...Tasks,
+						{	
+							Contents: CheckListItems, // We are adding the checklist items to the "Contents" key
+							Type: "CheckList",
+							Color: CurrentColor,
+							TaskID: res["data"].TaskID
+						},
+					]);
+					
+				}
 			}
 		}
 	}
@@ -312,64 +433,92 @@ export default function TaskComponent0 (){
 
 	// This is to delete the task from the DB
 	function DeleteTask(data) {
-		(async () => {
-			setDeleteLoading(true)
-			await TokenRefresh("/delete","POST",data, {DeleteType : "fromTasks"})
-			.then((res) => {
-				setDeleteLoading(false)
-				console.log(res.data)
 
-				// After deleting, inorder for fast update we are removing the item from the
-				// "Tasks" state as well so we don't have to wait for the backend to trigger a update
+		if (!GuestMode) {
+			(async () => {
+				setDeleteLoading(true)
+				await TokenRefresh("/delete","POST",data, {DeleteType : "fromTasks"})
+				.then((res) => {
+					setDeleteLoading(false)
+					console.log(res.data)
+	
+					// After deleting, inorder for fast update we are removing the item from the
+					// "Tasks" state as well so we don't have to wait for the backend to trigger a update
+	
+					const NewTaskList = Tasks.filter((item) => item !== data);
+					setTasks(NewTaskList);
+					
+					if (DeletedTasks.length === 0){
+						setDeletedTasks([data]);
+					} else {
+						setDeletedTasks((prev) => [...prev,data]);
+					}
+					setDeleteModelStatus(true)
+	
+				})
+				.catch((error) => {
+					setError(error)
+				})
+			})()
 
-				const NewTaskList = Tasks.filter((item) => item !== data);
-				setTasks(NewTaskList);
-				
-				if (DeletedTasks.length === 0){
-					setDeletedTasks([data]);
-				} else {
-					setDeletedTasks((prev) => [...prev,data]);
-				}
-				setDeleteModelStatus(true)
+		} else {
 
-			})
-			.catch((error) => {
-				setError(error)
-			})
-		})()
+			const NewTaskList = Tasks.filter((item) => item !== data);
+			setTasks(NewTaskList);
+			
+			if (DeletedTasks.length === 0){
+				setDeletedTasks([data]);
+			} else {
+				setDeletedTasks((prev) => [...prev,data]);
+			}
+			setDeleteModelStatus(true)
+		}
 		
 	}
 
 	// This is to undo the last delete action
 	function UndoTask(){
-		(async () => {
-			setDeleteLoading(true)
-			await TokenRefresh("/new","POST",{
-				...(DeletedTasks[DeletedTasks.length-1]),
-			}).then((res) => {
-				console.log(res.data)
-				setTasks((prev) => [...prev,DeletedTasks[DeletedTasks.length-1]])
-				setDeleteLoading(false)
-				setDeleteModelStatus(false)
-				clearInterval(DeleteModalInterval) // When undo action is performed the timer is cleared so as to not interfere the next delete action
-			})
-			.catch((error) => {
-				setError(error)
-			})
-		})()
 
-		(async () => {
-			await TokenRefresh("/delete","POST",{
-				...(DeletedTasks[DeletedTasks.length-1])
-			},{DeleteType : "fromTrash"})
-			.then((res) => {
-				console.log(res.data)
-				setDeletedTasks((prev) => prev.filter((item) => item !== DeletedTasks[DeletedTasks.length-1]))
-			})
-			.catch((error) => {
-				setError(error)
-			})
-		})()
+		if (!GuestMode) {
+			(async () => {
+				setDeleteLoading(true)
+				await TokenRefresh("/new","POST",{
+					...(DeletedTasks[DeletedTasks.length-1]),
+				}).then((res) => {
+					console.log(res.data)
+					setTasks((prev) => [...prev,DeletedTasks[DeletedTasks.length-1]])
+					setDeleteLoading(false)
+					setDeleteModelStatus(false)
+					clearInterval(DeleteModalInterval) // When undo action is performed the timer is cleared so as to not interfere the next delete action
+				})
+				.catch((error) => {
+					setError(error)
+				})
+			})()
+	
+			(async () => {
+				await TokenRefresh("/delete","POST",{
+					...(DeletedTasks[DeletedTasks.length-1])
+				},{DeleteType : "fromTrash"})
+				.then((res) => {
+					console.log(res.data)
+					setDeletedTasks((prev) => prev.filter((item) => item !== DeletedTasks[DeletedTasks.length-1]))
+				})
+				.catch((error) => {
+					setError(error)
+				})
+			})()
+
+		} else {
+
+			setTasks((prev) => [...prev,DeletedTasks[DeletedTasks.length-1]])
+
+			setDeleteLoading(false)
+			setDeleteModelStatus(false)
+			clearInterval(DeleteModalInterval) // When undo action is performed the timer is cleared so as to not interfere the next delete action
+	
+			setDeletedTasks((prev) => prev.filter((item) => item !== DeletedTasks[DeletedTasks.length-1]))
+		}
 
 	}
 
@@ -378,23 +527,33 @@ export default function TaskComponent0 (){
 	// It takes the modified item and the original item as those are needed in order to update the mongodb
 	function UpdateTask(ModifiedItem, OriginalItem, index) {
 
-		(async () => {
-			await TokenRefresh("/update","POST",{
-				OriginalItem: OriginalItem,
-				ModifiedItem: ModifiedItem,
-			}).then((res) => console.log(res.data))
-			.catch((error) => {
-				setError(error)
-			})
-		})()
+		if (!GuestMode) {
+			(async () => {
+				await TokenRefresh("/update","POST",{
+					OriginalItem: OriginalItem,
+					ModifiedItem: ModifiedItem,
+				}).then((res) => console.log(res.data))
+				.catch((error) => {
+					setError(error)
+				})
+			})()
+	
+			// After updating, inorder for fast update we are updating the item from the
+			// "Tasks" state as well so we don't have to wait for the backend to trigger a update
+	
+			const TasksCopy = JSON.parse(JSON.stringify(Tasks)); // We are making a deep copy of the Tasks state as don't want to share the same memory location
+			TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
+			console.warn(TasksCopy)
+			setTasks([...TasksCopy]); // Now we are updating the Tasks state with the updated TasksCopy
+		
+		} else {
+	
+			const TasksCopy = JSON.parse(JSON.stringify(Tasks)); // We are making a deep copy of the Tasks state as don't want to share the same memory location
+			TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
+			console.warn(TasksCopy)
+			setTasks([...TasksCopy]); // Now we are updating the Tasks state with the updated TasksCopy
 
-		// After updating, inorder for fast update we are updating the item from the
-		// "Tasks" state as well so we don't have to wait for the backend to trigger a update
-
-		const TasksCopy = JSON.parse(JSON.stringify(Tasks)); // We are making a deep copy of the Tasks state as don't want to share the same memory location
-		TasksCopy[index] = ModifiedItem; // Now we are updating the TasksCopy with the modified item
-		console.warn(TasksCopy)
-		setTasks([...TasksCopy]); // Now we are updating the Tasks state with the updated TasksCopy
+		}
 	}
 
 	// **********************************************************************************************
@@ -550,10 +709,8 @@ export default function TaskComponent0 (){
 							<button
 								// This is to add the task to the database
 								disabled={isAddTaskLoading}
-								onClick={(e) => {
-									console.warn("Yessss")
+								onClick={() => {
 									CreateTask()
-									setisAddTaskLoading(true)
 								}}
 								className={`${isAddTaskLoading && "!bg-green-500/70 cursor-not-allowed"} w-[100px] mx-1 h-[40px] bg-secondary rounded-md flex justify-center items-center cursor-pointer hover:bg-green-500`}>
 								Add Task{" "}
@@ -824,7 +981,7 @@ export default function TaskComponent0 (){
 
 					<div>
 						{TrashPage ? (
-							<TrashComponent setTasks={setTasks} isAddTaskLoading={isAddTaskLoading} setisAddTaskLoading={setisAddTaskLoading} setDeleteLoading={setDeleteLoading} DeleteLoading={DeleteLoading} DeletedTasks={DeletedTasks} setDeletedTasks={setDeletedTasks} setError={setError} />
+							<TrashComponent Tasks={Tasks} setTasks={setTasks} isAddTaskLoading={isAddTaskLoading} setisAddTaskLoading={setisAddTaskLoading} setDeleteLoading={setDeleteLoading} DeleteLoading={DeleteLoading} DeletedTasks={DeletedTasks} setDeletedTasks={setDeletedTasks} setError={setError} />
 						) : (
 							<div>
 								{/* In here it first checks if the "Tasks" state has any content, */}

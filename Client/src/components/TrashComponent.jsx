@@ -1,41 +1,60 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { TokenRefresh } from './AdditionalComponents'
 
-const TrashComponent = ({ setTasks, DeletedTasks, setDeletedTasks, setError, DeleteLoading, setDeleteLoading, setisAddTaskLoading, isAddTaskLoading}) => {
+import AuthContext from '../Authentication/Components/AuthContext';
+
+const TrashComponent = ({ Tasks, setTasks, DeletedTasks, setDeletedTasks, setError, DeleteLoading, setDeleteLoading, setisAddTaskLoading, isAddTaskLoading}) => {
+
+	const { GuestMode } = useContext(AuthContext);
 
 	function DeleteTask(data) {
-		(async () => {
-			setDeleteLoading(true)
-			await TokenRefresh("/delete","POST",data,{DeleteType : "fromTrash"})
-			.then((res) => {
-				setDeleteLoading(false)
-				console.log(res.data)
-				setDeletedTasks((prev) => prev.filter((item) => item.TaskID !== data.TaskID))
-			})
-			.catch((error) => {
-				setError(error)
-			})
-		})()
+		
+		if (!GuestMode) {
+			(async () => {
+				setDeleteLoading(true)
+				await TokenRefresh("/delete","POST",data,{DeleteType : "fromTrash"})
+				.then((res) => {
+					setDeleteLoading(false)
+					console.log(res.data)
+					setDeletedTasks((prev) => prev.filter((item) => item.TaskID !== data.TaskID))
+				})
+				.catch((error) => {
+					setError(error)
+				})
+			})()
+
+		} else {
+			setDeletedTasks((prev) => prev.filter((item) => item.TaskID !== data.TaskID))
+		}
 	}
+	
 
 	function CreateTask(data) {
-        (async () => {
-			setisAddTaskLoading(true)
-            await TokenRefresh("/retreive","POST",data).then((res) => 
-            {
-				setisAddTaskLoading(false)
-                console.log(res.data)
+        
+		if (!GuestMode) {
+			(async () => {
+				setisAddTaskLoading(true)
+				await TokenRefresh("/retreive","POST",data).then((res) => 
+				{
+					setisAddTaskLoading(false)
+					console.log(res.data)
+	
+					//  Adding the new task locally
+					setTasks((prev) => [...prev,data])
+					setDeletedTasks((prev) => prev.filter((item) => item.TaskID !== data.TaskID))
+	
+				})
+				.catch((error) => {
+					setError(error)
+				})
+			})()
 
-                //  Adding the new task locally
-                setTasks((prev) => [...prev,data])
-				setDeletedTasks((prev) => prev.filter((item) => item.TaskID !== data.TaskID))
-
-            })
-            .catch((error) => {
-                setError(error)
-            })
-        })()
+		} else {
+			setTasks((prev) => [...prev,data])
+			setDeletedTasks((prev) => prev.filter((item) => item.TaskID !== data.TaskID))
+		}
 	}
+
 
 	function TaskOptions({ CustomClass, item }) {
 		return (

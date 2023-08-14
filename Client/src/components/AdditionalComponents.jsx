@@ -121,21 +121,28 @@ export function DeleteTaskModal({UndoTask, DeleteLoading}) {
 )}
 
 export function ErrorModal({ErrorType}) {
-	const {setAuthstate} = useContext(AuthContext)
+	const {setAuthstate, GuestMode, setGuestMode} = useContext(AuthContext)
 	const Navigate = useNavigate()
 
 	function SignOut(){
-		axios.get("/signout").then((res) => {
-			console.log(res.data)
-			if (res.status == 200){
-				localStorage.setItem("Authstate", false)
-				localStorage.setItem("UserID","")
-				localStorage.setItem("SessionDuration","")
-				
-				setAuthstate(false)
-				Navigate("/")
-			}
-		})
+		
+		if (!GuestMode) {
+			axios.get("/signout").then((res) => {
+				console.log(res.data)
+				if (res.status == 200){
+					localStorage.setItem("Authstate", false)
+					localStorage.setItem("UserID","")
+					localStorage.setItem("SessionDuration","")
+					
+					setAuthstate(false)
+					Navigate("/")
+				}
+			})
+
+		} else {
+			setGuestMode(false)
+			Navigate("/")
+		}
 	}
 
 	if (ErrorType === 500){

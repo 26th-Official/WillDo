@@ -16,17 +16,22 @@ function App() {
 	const [Authstate, setAuthstate] = useState((localStorage.getItem("Authstate") == "true" ? true : false)) 
 	const [ResetPassword, setResetPassword] = useState(false)
 	const [UserID, setUserID] = useState(localStorage.getItem("UserID"))
+	const [GuestMode, setGuestMode] = useState((localStorage.getItem("GuestMode") == "true" ? true : false))
 
 	useEffect(() => {
 		localStorage.setItem("Authstate",Authstate)
 	}, [Authstate])
 
+	useEffect(() => {
+		localStorage.setItem("GuestMode",GuestMode)
+	}, [GuestMode])
+
 	return (
-		<AuthContext.Provider value={{ Authstate, setAuthstate, UserID, setResetPassword }}>
+		<AuthContext.Provider value={{ Authstate, setAuthstate, UserID, setResetPassword, GuestMode, setGuestMode}}>
 			<Routes >
-				<Route path='/' element={<HomeComponent Authstate={Authstate} />} />
+				<Route path='/' element={<HomeComponent />} />
 				{!Authstate && <Route path='/forgot' element={<ForgotPasswordComponent />} />}
-				{Authstate && <Route path='/tasks' element={<TaskComponent />} />}
+				{(Authstate || GuestMode) && <Route path='/tasks' element={<TaskComponent GuestMode={GuestMode} />} />}
 				{!Authstate && <Route path='/signin' element={<SignInComponent setUserID={setUserID} />} />}
 				{!Authstate && <Route path='/signup' element={<SignUpComponent />} />}
 				{ResetPassword && <Route path='/reset' element={<ResetPasswordComponent />} />}	

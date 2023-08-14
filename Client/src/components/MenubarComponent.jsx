@@ -7,7 +7,7 @@ import { toInteger } from "lodash";
 import { TokenRefresh } from "./AdditionalComponents";
 
 export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) {
-	const { setAuthstate, setResetPassword } = useContext(AuthContext);
+	const { setAuthstate, setResetPassword, GuestMode, setGuestMode } = useContext(AuthContext);
 	const [Settings, setSettings] = useState(false);
 
 	const [SessionSettings, setSessionSettings] = useState(false)
@@ -18,25 +18,32 @@ export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) 
 
 	let Navigate = useNavigate();
 
-	// useEffect(() => {
-	// 	if (SessionDuration > 30) {
-	// 		setSessionDuration(30);
-	// 	} else if (SessionDuration < 1) {
-	// 		setSessionDuration(1);
-	// 	}
-	// });
+	useEffect(() => {
+		if (SessionDuration > 30) {
+			setSessionDuration(30);
+		} else if (SessionDuration < 1) {
+			setSessionDuration(1);
+		}
+	});
 
 	function SignOut(Redirect) {
-		axios.get("/signout").then((res) => {
-			console.log(res.data);
-			if (res.status == 200) {
-				localStorage.setItem("Authstate", false);
-				localStorage.setItem("UserID", "");
-				localStorage.setItem("SessionDuration", "");
-				setAuthstate(false);
-				Navigate(Redirect);
-			}
-		});
+
+		if (!GuestMode){
+			axios.get("/signout").then((res) => {
+				console.log(res.data);
+				if (res.status == 200) {
+					localStorage.setItem("Authstate", false);
+					localStorage.setItem("UserID", "");
+					localStorage.setItem("SessionDuration", "");
+					setAuthstate(false);
+					Navigate(Redirect);
+				}
+			});
+
+		} else {
+			setGuestMode(false)
+			Navigate("/")
+		}
 	}
  
 	return (
@@ -156,11 +163,15 @@ export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) 
 							Tasks
 						</button>
 					)}
-					<button
-						onClick={() => setSettings(true)}
-						className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">
-						Settings
-					</button>
+
+					{!GuestMode && (
+						<button
+							onClick={() => setSettings(true)}
+							className="p-3 bg-secondary m-2 rounded-md hover:bg-secondary/50">
+							Settings
+						</button>
+					)}
+					
 					<div className="h-0.5 my-2 bg-secondary"/>
 					<button
 						onClick={() => {

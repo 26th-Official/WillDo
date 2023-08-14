@@ -1,30 +1,41 @@
-import { useState } from "react"
+import { useState, useContext } from "react"
 import { TokenRefresh } from "./AdditionalComponents"
-import { useNavigate } from "react-router-dom"
+
+import AuthContext from "../Authentication/Components/AuthContext";
 
 export function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setAddTask, setError, setDeletedTasks, DeletedTasks }) {
     
+    const { GuestMode } = useContext(AuthContext);
+
     // Its for indicating the loading while the all the Trash tasks are deleting
 	const [AllDeleteLoading, setAllDeleteLoading] = useState(false)
 
     function DeleteTask() {
-        if (DeletedTasks.length === 0) {
-            return
-        }
         
-		(async () => {
-            setAllDeleteLoading(true)
-			await TokenRefresh("/delete","POST",{}, {DeleteType : "fromTrashAll"})
-			.then((res) => {
-                setAllDeleteLoading(false)
-				console.log(res.data)
-                setDeletedTasks([])
-			})
-			.catch((error) => {
-				setError(error)
-			})
-		})()
-		
+        if (!GuestMode){
+            if (DeletedTasks.length === 0) {
+                return
+            }
+            
+            (async () => {
+                setAllDeleteLoading(true)
+                await TokenRefresh("/delete","POST",{}, {DeleteType : "fromTrashAll"})
+                .then((res) => {
+                    setAllDeleteLoading(false)
+                    console.log(res.data)
+                    setDeletedTasks([])
+                })
+                .catch((error) => {
+                    setError(error)
+                })
+            })()
+
+        } else {
+            if (DeletedTasks.length === 0) {
+                return
+            }
+            setDeletedTasks([])
+        }
 	}
 
     
