@@ -43,18 +43,18 @@ export function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setA
     <div className="fixed w-full top-0 right-0 left px-2 z-[100] py-5 bg-background/50 backdrop-blur-sm ">
         <div className="flex justify-center items-center">
             { /* This is the Menu Button and it controls the "MenuBarStatus" */ }
-            <i onClick={() => {
+            <button onClick={() => {
                 setMenuBarStatus(true);
             }} className="fa fa-bars absolute left-0 p-0.5 text-2xl mx-6 mt-1 text-white/50
-                  hover:text-white/100 mr-auto" aria-hidden="true"></i>
+                  hover:text-white/100 mr-auto" aria-hidden="true"></button>
 
-            <p onClick={() => {
+            <button onClick={() => {
                 if (TrashPage) {
                     setTrashPage(false)
                 }
-            }} className="font-Shadows_Into_Light text-6xl max-sm:text-5xl max-sm:pl-9 cursor-pointer">
+            }} className="font-Shadows_Into_Light text-6xl max-sm:text-5xl max-sm:pl-9">
                 {!TrashPage ? "Task I Will Do" : "Trash Bin"}
-            </p>
+            </button>
 
 
             {TrashPage ? (
@@ -63,10 +63,10 @@ export function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setA
                 }} className={`${AllDeleteLoading ? "fas fa-circle-notch animate-spin text-red-500" : "fas fa-trash"} absolute right-0 p-2 text-2xl mx-6 mt-1 text-white/50
                 hover:text-red-500 max-sm:hidden`} aria-hidden="true"></button>
             ) : (
-                <i onClick={() => {
+                <button onClick={() => {
                     setAddTask(true)
                 }} className="fa fa-plus-circle absolute right-0 p-2 text-2xl mx-6 mt-1 text-white/50
-                hover:text-white/100 max-sm:hidden" aria-hidden="true"></i>
+                hover:text-white/100 max-sm:hidden" aria-hidden="true"></button>
             )}
 
         </div>

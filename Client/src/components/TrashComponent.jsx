@@ -80,12 +80,39 @@ const TrashComponent = ({ Tasks, setTasks, DeletedTasks, setDeletedTasks, setErr
 					<TaskOptions CustomClass={"sm:!hidden mr-auto"} item={item} index={index} />
 					<div className="flex-1 group-hover:max-sm:ml-5">
 						{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
-								<div className={`shrink-0 w-[13.5px] h-[13.5px] mt-[5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
-									<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
-								</div>
-								<p className={`${subitem.Checked && "line-through brightness-50"} text-left`}>{subitem.Heading}</p>
+								{!subitem.Checked && (
+									<>
+										<button onClick={() => {
+												const UpdatedCheckListItems = JSON.parse(JSON.stringify(item));
+												UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked;
+												UpdateTask(UpdatedCheckListItems, {TaskID : item["TaskID"]}, index);
+											}} className={`cursor-default shrink-0 w-[13.5px] h-[13.5px] mt-[5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
+											<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
+										</button>
+										<p className={`${subitem.Checked && "line-through brightness-50"} text-left`}>{subitem.Heading}</p>
+									</>
+								)}
 							</div>
 						)}
+
+						{<div className="w-full h-[1px] bg-white/50 my-2" />}
+
+						{item.Contents.map((subitem, subindex) => <div key={subindex} className="flex">
+								{subitem.Checked && (
+									<>
+										<button onClick={() => {
+												const UpdatedCheckListItems = JSON.parse(JSON.stringify(item));
+												UpdatedCheckListItems.Contents[subindex].Checked = !UpdatedCheckListItems.Contents[subindex].Checked;
+												UpdateTask(UpdatedCheckListItems, {TaskID : item["TaskID"]}, index);
+											}} className={`cursor-default shrink-0 w-[13.5px] h-[13.5px] mt-[5px] mr-2 border border-secondary/70 bg-blue-500 rounded-sm flex items-center justify-center ${subitem.Checked === false && "!bg-white"}`}>
+											<i className={`fa fa-check text-white text-[10px] pt-[1.5px] hidden ${subitem.Checked === true && "!block"}`} aria-hidden="true"></i>
+										</button>
+										<p className={`${subitem.Checked && "line-through brightness-50"} text-left`}>{subitem.Heading}</p>
+									</>
+								)}
+							</div>
+						)}
+						
 					</div>
 					<TaskOptions CustomClass={"max-sm:!hidden ml-auto"} item={item} index={index} />
 				</div>
