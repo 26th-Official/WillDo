@@ -8,20 +8,34 @@ export function ErrorComponent() {
 	let Navigate = useNavigate()
 	
 	useEffect(() => {
-		setInterval(() => {
+		const MainInterval = setInterval(() => {
 			setRedirect(true)
-			setInterval(() => {
-				Navigate("/")
-			},[2000])
 		},[3000])
-	})
+
+		return () => {
+			clearInterval(MainInterval)
+		}
+	},[])
+
+	useEffect(() => {
+		const SubInterval = setInterval(() => {
+			Navigate("/")
+		},[3300])
+
+		return () => {
+			clearInterval(SubInterval)
+		}
+	},[Redirect])
 
 	return (
 		<div className="overflow-clip">
 			<HeaderComponent />
 			<div className="h-5" />
 			<div className="w-[600px] max-sm:w-[300px] relative overflow-clip mx-auto">
-				<img onClick={() => {Navigate("/")}} src="/404_Error_Image.svg" alt="Error_Image" />
+				<img className="cursor-pointer" 
+				onClick={() => {
+					Navigate("/")
+				}} src="/404_Error_Image.svg" alt="Error_Image" />
 				{Redirect ? (
 					<p className="absolute animate-pulse text-green-500 z-[100] rotate-[3.5deg] left-[241px] top-[390px] text-[22px] font-extrabold">
 						Redirecting...

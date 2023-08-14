@@ -9,17 +9,20 @@ const SignInComponent = ({setUserID}) => {
 	const {setAuthstate} = useContext(AuthContext)
 
 	const [AuthData, setAuthData] = useState({
-		Username: "",
+		Email: "",
 		Password: "",
 	});
 
 	const Messages = [
 		"",
-		"Incorrect Username or Password",
+		"User Doesn't exist!",
+		"Incorrect Password",
 		"Please Enter a Valid Password",
 		"Please enter all the Fields",
+        "Please Enter a valid Email ID !!",
 		"Something went wrong! Try again later..."
 	];
+
 	const [ErrorMessage, setErrorMessage] = useState(Messages[0]); // 👆
 
 	const [Loading, setLoading] = useState(false);
@@ -28,8 +31,8 @@ const SignInComponent = ({setUserID}) => {
 
 	const Navigate = useNavigate()
 
-	const PasswordRegex =
-		/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%&*?])[A-Za-z\d!@#$%^&*?]{8,}$/;
+	const PasswordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%&*?])[A-Za-z\d!@#$%^&*?]{8,}$/;
+	const EmailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 
 	function Authentication(UserData) {
 		// This is to sign in the user
@@ -45,19 +48,24 @@ const SignInComponent = ({setUserID}) => {
 			console.warn("Successfully Signed In!!");
 
 			setAuthData({
-				Username: "",
+				Email: "",
 				Password: "",
 			});
 			setAuthstate(true)
 			Navigate("/tasks",{replace:true});
 			
 		}).catch((error) => {
-			if (error["response"].status === 404 || error["response"].status === 401) {
+			if (error["response"].status === 401) {
 				setLoading(false);				
-				setErrorMessage(Messages[1]); // "Incorrect Username or Password"
+				setErrorMessage(Messages[2]); // "Incorrect Password"
+
+			} else if (error["response"].status === 404) {
+				setLoading(false);				
+				setErrorMessage(Messages[1]); // "User Doesn't exist!",
+
 			} else {
 				setLoading(false)
-				setErrorMessage(Messages[4]) // "Something went wrong! Try again later..."
+				setErrorMessage(Messages[6]) // "Something went wrong! Try again later..."
 			}
 		})
 	}
@@ -86,16 +94,16 @@ const SignInComponent = ({setUserID}) => {
 					</div>
 				)}
 				<div className="w-full">
-					<p className="text-left text-md">Username</p>
+					<p className="text-left text-md">Email</p>
 					<input
-						id="Username_Field"
+						id="Email_Field"
 						ref={(el) => (AuthRef.current[0] = el)}
 						onKeyDown={(e) => KeyPress(e, 1)}
-						value={AuthData !== {} && AuthData.Username}
+						value={AuthData !== {} && AuthData.Email}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,
-								Username: e.target.value,
+								Email: e.target.value,
 							})
 						}
 						onFocus={(e) =>
@@ -105,7 +113,7 @@ const SignInComponent = ({setUserID}) => {
 						onBlur={(e) => (e.target.style.outline = "none")}
 						required
 						autoFocus
-						placeholder="Please Enter your Username"
+						placeholder="Please Enter your Email ID"
 						className="bg-black/90 min-h-[24px] w-full rounded-md text-white p-1 my-2"
 					/>
 					<div className="h-3" />
@@ -149,16 +157,18 @@ const SignInComponent = ({setUserID}) => {
 							}
 
 							console.warn("Fill all the fields!!");
-							setErrorMessage(Messages[3]);
+							setErrorMessage(Messages[4]);
+							return
 						}
 
-						if (!PasswordRegex.test(AuthRef.current[1].value)) {
-							console.warn("Not valid Password!!");
-							setErrorMessage(Messages[2]);
+						else if (!EmailRegex.test(AuthRef.current[0].value)) {
+							console.warn("Not valid Email ID!!");
+							setErrorMessage(Messages[5]);
+							return
 						}
 
 						const UserData = {
-							Username: AuthRef.current[0].value,
+							Email: AuthRef.current[0].value,
 							Password: AuthRef.current[1].value,
 						};
 						Authentication(UserData);
@@ -179,14 +189,14 @@ const SignInComponent = ({setUserID}) => {
 				</button>
 			</div>
 			<div>
-				<p onClick={() => Navigate("/")} className="inline text-sm hover:border-b cursor-pointer hover:text-white/70">
-					Home
+				<p onClick={() => Navigate("/forgot")} className="inline text-sm hover:border-b cursor-pointer hover:text-yellow-400">
+					Forgot Password
 				</p>{" "}
 				|<p className="text-sm inline"> Don't have a account ?</p>
 				<p
 					onClick={() => {
 						setAuthData({
-							Username: "",
+							Email: "",
 							Password: "",
 						});
 						setErrorMessage("");

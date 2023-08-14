@@ -69,8 +69,8 @@ app.config['JWT_COOKIE_SECURE'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
 
 # Email Configs
-Credential = Credentials.from_authorized_user_file("./Credentials.json")
-Service = build("gmail","v1",Credential)
+Credential = Credentials.from_authorized_user_file(r"Server\api\Credentials.json")
+Service = build("gmail","v1",credentials=Credential)
 
 # *===================CRUD Operations=================================
 
@@ -232,7 +232,6 @@ def UpdateData():
 @app.route("/fetch")
 @jwt_required()
 def Fetch():    
-    sleep(20)
     UserID = { "UserID" : (request.args.get("UserID"))}
     
     Results = collection.find_one(UserID)
@@ -257,7 +256,7 @@ def SignUp():
     
     HashedPassword = hashpw(data["Password"].encode("utf-8"),gensalt())
     
-    if User_Collection.find_one({"Username" : data["Username"]}) != None:
+    if User_Collection.find_one({"Email" : data["Email"]}) != None:
         response = jsonify({"Message" : {
             "Status" : "denied",
             "Operation" : "User Already Exists",
@@ -285,11 +284,11 @@ def SignUp():
         
   
 # This is to Handle the SignIn Process
-@app.route("/signin",methods=["POST"])
+@app.route("/signin", methods=["POST"])
 def SignIn():
     data = request.get_json()
     pprint(data)
-    UserData = User_Collection.find_one({"Username" : data["Username"]})
+    UserData = User_Collection.find_one({"Email" : data["Email"]})
     
     if not UserData:
         response = jsonify({
@@ -305,8 +304,8 @@ def SignIn():
         })
         return response,401
     
-    access_token = create_access_token(identity={"Username" : data["Username"]})
-    refresh_token = create_refresh_token(identity={"Username" : data["Username"]},expires_delta=timedelta(days=UserData["SessionDuration"]))
+    access_token = create_access_token(identity={"Email" : data["Email"]})
+    refresh_token = create_refresh_token(identity={"Email" : data["Email"]},expires_delta=timedelta(days=UserData["SessionDuration"]))
     response = jsonify({
         "Status" : "success",
         "Operation" : "User Signed In",
@@ -314,10 +313,6 @@ def SignIn():
         "SessionDuration" : str(UserData["SessionDuration"])
     })
     
-    print("============================")
-    print((datetime.fromtimestamp(decode_token(refresh_token)["exp"])) - (datetime.now()))
-    print("============================")
-
     set_access_cookies(response,access_token)
     set_refresh_cookies(response,refresh_token)
     return response,200
@@ -330,7 +325,7 @@ def TokenRefresh():
     response = jsonify({
         "Status" : "success",
     })
-    access_token = create_access_token(identity={"Username" : get_jwt_identity()})
+    access_token = create_access_token(identity={"Email" : get_jwt_identity()})
     set_access_cookies(response,access_token)
     return response
 
@@ -369,25 +364,34 @@ def ResetPassword():
     return response,200
 
 
-@app.route("/forgotpassword")
-def ResetPassword():
+@app.route("/forgotpassword", methods=["POST"])
+def ForgotPassword():
     data = request.get_json()
     pprint(data)
     
+    # Generate, Verify and Reset are the Operation Types
     OperationType = request.args.get("OperationType")
     
     if OperationType == "Generate":
+        UserData = User_Collection.find_one({"Email" : data["Email"]})
+        
+        if not UserData:
+            response = jsonify({
+                "Status" : "failed",
+                "Operation" : "User Doesn't Exist",
+            })
+            return response,404
         
         OTP = randint(100000,999999)
         
         User_Collection.update_one({
-            "Username" : data["Username"]
+            "Email" : data["Email"]
         }, {
             "$set" : {"OTP" : OTP}
         })
         
         Message = MIMEText(f"Here is your OTP for Verification {OTP}")
-        Message["to"] = data["email"]
+        Message["to"] = data["Email"]
         Message["from"] = "26thofficial.creator@gmail.com"
         Message["subject"] = "Verification from WillDo"
         MessageBody = {
@@ -403,18 +407,20 @@ def ResetPassword():
         })
         
         return response,200
+        
     
     elif OperationType == "Verify":
         
         UserData = User_Collection.find_one({
-            "Username" : data["Username"]
+            "Email" : data["Email"]
         })
+        pprint(UserData)
         
-        if UserData["OTP"] == data["OTP"]:
+        if int(UserData["OTP"]) == int(data["OTP"]):
             response = jsonify({
                 "Status" : "success",
                 "Operation" : "Verification Successful",
-                "UserID" : UserData["_id"]
+                "UserID" : str(UserData["_id"])
             })
             
             return response,200
@@ -425,6 +431,26 @@ def ResetPassword():
         })
         
         return response,401
+    
+    
+    elif OperationType == "Reset":
+        
+        _id = { "_id" : ObjectId(str((request.args.get("UserID"))))}
+        
+        HashedPassword = hashpw(data["NewPassword"].encode("utf-8"),gensalt())
+        
+        User_Collection.update_one({
+            **_id
+        }, {
+            "$set" : {"Password" : HashedPassword}
+        })
+        
+        response = jsonify({
+            "Status" : "success",
+            "Operation" : "Password Resetted",
+        })
+        
+        return response,200
     
 
 # This is to signout and unset both the Access and Refresh Token

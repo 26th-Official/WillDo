@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AuthContext from "../Authentication/Components/AuthContext";
 import axios from "../Modules/axios";
 
-export function HomeComponent() {
+export default function HomeComponent() {
 	const {Authstate, setAuthstate} = useContext(AuthContext)
 
 	const Navigate = useNavigate()

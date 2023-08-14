@@ -6,13 +6,20 @@ import { useNavigate } from "react-router-dom";
 const SignupComponent = () => {
 
 	const [AuthData, setAuthData] = useState({
-		Username: "",
+		Email: "",
 		Password: "",
 		FirstName: "",
 		LastName: "",
 	});
 
-    const Messages = ["","Username already exists!", "Please Enter a Valid Password", "Please enter all the Fields", "Something went wrong! Try again later..."]
+    const Messages = [
+		"",
+		"User already exists!", 
+		"Please Enter a Valid Password", 
+		"Please enter all the Fields", 
+		"Please Enter a valid Email ID !!", 
+		"Something went wrong! Try again later..."
+	]
 
 	const [ErrorMessage, setErrorMessage] = useState(Messages[0]); // 👆
 
@@ -23,6 +30,8 @@ const SignupComponent = () => {
 	const Navigate = useNavigate()
 
 	const PasswordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%&*?])[A-Za-z\d!@#$%^&*?]{8,}$/;
+	const EmailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+
 
     function Authentication(UserData) {
         // This is to sign up the user
@@ -33,7 +42,7 @@ const SignupComponent = () => {
 			setLoading(false)
 			console.warn("Successfully Signed Up!!")
 			setAuthData({
-				Username : "",
+				Email : "",
 				Password : "",
 				FirstName : "",
 				LastName : ""
@@ -42,11 +51,11 @@ const SignupComponent = () => {
         }).catch((error) => {
 			if (error["response"].status === 409){
                 setLoading(false)
-                console.warn("Username already exists!")
-                setErrorMessage(Messages[1]) // "Username already exists!"
+                console.warn("User already exists!")
+                setErrorMessage(Messages[1]) // "User already exists!"
             } else {
 			setLoading(false)
-			setErrorMessage(Messages[4]) // "Something went wrong! Try again later..."
+			setErrorMessage(Messages[5]) // "Something went wrong! Try again later..."
 			}
 		})
     }
@@ -120,15 +129,15 @@ const SignupComponent = () => {
 						className="bg-black/90 min-h-[24px] w-full rounded-md text-white p-1 my-2"
 					/>
 					<div className="h-3" />
-					<p className="text-left text-md">Username</p>
+					<p className="text-left text-md">Email</p>
 					<input
-						id="Username_Field"
+						id="Email_Field"
 						ref={(el) => (AuthRef.current[2] = el)}
-						value={AuthData !== {} && AuthData.Username}
+						value={AuthData !== {} && AuthData.Email}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,
-								Username: e.target.value,
+								Email: e.target.value,
 							})
 						}
 						onFocus={(e) =>
@@ -138,9 +147,10 @@ const SignupComponent = () => {
 						onBlur={(e) => (e.target.style.outline = "none")}
 						onKeyDown={(e) => KeyPress(e, 3)}
 						required
-						placeholder="Please Enter your Username"
+						placeholder="Please Enter your Email ID"
 						className="bg-black/90 min-h-[24px] w-full rounded-md text-white p-1 my-2"
 					/>
+					
 					<div className="h-3" />
 					<p className="text-left text-md">Password</p>
 					<input
@@ -192,10 +202,16 @@ const SignupComponent = () => {
 							return;
 						}
 
+						else if (!EmailRegex.test(AuthRef.current[2].value)) {
+							console.warn("Not valid Email ID!!");
+							setErrorMessage(Messages[4]); // Not valid Email!!
+							return;
+						}
+
 						const UserData = {
 							FirstName: AuthRef.current[0].value,
 							LastName: AuthRef.current[1].value,
-							Username: AuthRef.current[2].value,
+							Email: AuthRef.current[2].value,
 							Password: AuthRef.current[3].value,
 						};
 						console.warn(UserData);
@@ -224,7 +240,7 @@ const SignupComponent = () => {
 				<p
 					onClick={() => {
 						setAuthData({
-							Username: "",
+							Email: "",
 							Password: "",
 							FirstName: "",
 							LastName: "",

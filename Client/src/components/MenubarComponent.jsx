@@ -24,7 +24,7 @@ export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) 
 		}
 	});
 
-	function SignOut(Redirect="/") {
+	function SignOut(Redirect) {
 		axios.get("/signout").then((res) => {
 			console.log(res.data);
 			if (res.status == 200) {
@@ -36,7 +36,7 @@ export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) 
 			}
 		});
 	}
-
+ 
 	return (
 		<>
 			<div
@@ -159,7 +159,9 @@ export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) 
 					</button>
 					<div className="h-0.5 my-2 bg-secondary"/>
 					<button
-						onClick={SignOut}
+						onClick={() => {
+							SignOut("/")
+						}}
 						className="p-3 bg-secondary m-2 rounded-md hover:bg-red-500 mt-auto">
 						Sign out
 					</button>

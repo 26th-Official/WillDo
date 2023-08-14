@@ -12,7 +12,7 @@ import TrashComponent from "./TrashComponent";
 
 // **********************************************************************************************
 
-export const TaskComponent = () => {
+export default function TaskComponent0 (){
 	// =======================================================
 	const [isInternet,setisInternet] = useState(navigator.onLine)
 	// =======================================================
