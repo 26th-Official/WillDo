@@ -14,15 +14,17 @@ export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) 
 	const [SessionDuration, setSessionDuration] = useState(toInteger(localStorage.getItem("SessionDuration")));
 	const SessionDurationRef = useRef();
 
+	const NumberRegex = /^(?:\d{1,6})$/  
+
 	let Navigate = useNavigate();
 
-	useEffect(() => {
-		if (SessionDuration > 30) {
-			setSessionDuration(30);
-		} else if (SessionDuration < 1) {
-			setSessionDuration(1);
-		}
-	});
+	// useEffect(() => {
+	// 	if (SessionDuration > 30) {
+	// 		setSessionDuration(30);
+	// 	} else if (SessionDuration < 1) {
+	// 		setSessionDuration(1);
+	// 	}
+	// });
 
 	function SignOut(Redirect) {
 		axios.get("/signout").then((res) => {
@@ -64,12 +66,14 @@ export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) 
 							<div className="flex p-3">
 								<input
 									onChange={(e) => {
+										if (!NumberRegex.test(e.target.value)){
+											return
+										}
 										setSessionDuration(
 											toInteger(e.target.value)
 										);
 									}}
 									value={SessionDuration}
-									type="number"
 									className="bg-black/90 h-[35px] w-full rounded-md text-white p-1 mr-1"
 								/>
 								<button

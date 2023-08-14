@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import axios from '../../Modules/axios'
 
 import { HeaderComponent } from '../../Components/AdditionalComponents'
-import AuthContext from './AuthContext'
 
 export default function ForgotPasswordComponent () {
     
-    let UserID = "64d514ea620614e9d9e0a0e5"
+    let UserID = ""
     const [ResetPage, setResetPage] = useState(false)
     const [VerificationPage, setVerificationPage] = useState(false)
 

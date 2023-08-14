@@ -472,12 +472,17 @@ export default function TaskComponent0 (){
 						{/* This is for the Normal text tasks */}
 						{!AddCheckBoxTask? (
 							<textarea
-							onInput={() => {
-								AddTaskRef.current.style.outline =
+							onInput={(e) => {
+								e.target.style.outline =
 									"0.7px solid rgb(255,255,255)";
-								AddTaskRef.current.style.height = "auto";
-								AddTaskRef.current.style.height =
-									AddTaskRef.current.scrollHeight + "px";
+								e.target.style.height = "auto";
+								e.target.style.height = e.target.scrollHeight + "px";
+							}}
+							onFocus={(e) => {
+								e.target.style.outline = "0.7px solid rgb(255,255,255)";
+							}}
+							onBlur={(e) => {
+								e.target.style.outline = "none";
 							}}
 							autoFocus
 							required
@@ -492,27 +497,35 @@ export default function TaskComponent0 (){
 									<div ref={(el) => CheckListTaskRef.current[index] = el} key={index} className="flex items-center my-2">
 										<input className="w-3.5 h-3.5 mx-2" type="checkbox"/>
 										<textarea 
-										autoFocus
-										// We are setting the value of the textarea to the "Heading" property of the item in the "CheckListItems" state
-										value={item.Heading}
-										onKeyDown={(e) => {
-											// This is to add a new checklist item when the user presses the enter key
-											if (e.key === "Enter"){
-												e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
-												const UpdatedCheckListItems = [...CheckListItems,{}]
+											autoFocus
+											// We are setting the value of the textarea to the "Heading" property of the item in the "CheckListItems" state
+											value={item.Heading}
+											onKeyDown={(e) => {
+												// This is to add a new checklist item when the user presses the enter key
+												if (e.key === "Enter"){
+													e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
+													const UpdatedCheckListItems = [...CheckListItems,{}]
+													setCheckListItems(UpdatedCheckListItems)
+												}
+											}}
+											// Since we are setting the "Value" property of the textarea its not editable now, 
+											// so we are using the "onChange" event to update the "Heading" property of the item in the "CheckListItems" state
+											onChange={(e) => {
+												const UpdatedCheckListItems = [...CheckListItems]
+												UpdatedCheckListItems[index].Heading = e.target.value // This sets the current text value the dict
 												setCheckListItems(UpdatedCheckListItems)
-											}
-										}}
-										// Since we are setting the "Value" property of the textarea its not editable now, 
-										// so we are using the "onChange" event to update the "Heading" property of the item in the "CheckListItems" state
-										onChange={(e) => {
-											const UpdatedCheckListItems = [...CheckListItems]
-											UpdatedCheckListItems[index].Heading = e.target.value // This sets the current text value the dict
-											setCheckListItems(UpdatedCheckListItems)
-										}}	
-										placeholder="Please Enter a Task" 
-										className="mx-2 bg-black/80 min-h-[24px] w-full rounded-md text-white p-1"
-										rows="1"></textarea>
+											}}	
+											onFocus={(e) => {
+												e.target.style.outline = "0.7px solid rgb(255,255,255)";
+											}}
+											onBlur={(e) => {
+												e.target.style.outline = "none";
+											}}
+											placeholder="Please Enter a Task" 
+											className="mx-2 bg-black/80 min-h-[24px] w-full rounded-md text-white p-1"
+											rows="1">
+												
+										</textarea>
 										{/* This is to delete a particular check list item */}
 										<i onClick={() => {
 											const UpdatedCheckListItems = CheckListItems.filter((item,ind) => ind !== index) // This will remove the item from the "CheckListItems" state which has the same index as the "index" parameter
@@ -640,6 +653,12 @@ export default function TaskComponent0 (){
 												UpdatedCheckListItems.Contents[index].Heading = e.target.value // This sets the current text value the dict
 												setCheckListItems(UpdatedCheckListItems)
 											}}	
+											onFocus={(e) => {
+												e.target.style.outline = "0.7px solid rgb(255,255,255)";
+											}}
+											onBlur={(e) => {
+												e.target.style.outline = "none";
+											}}
 											placeholder="Please Enter a Task" 
 											className="mx-2 bg-black/80 min-h-[24px] w-full rounded-md text-white p-1"
 											rows="1"></textarea>
@@ -737,6 +756,12 @@ export default function TaskComponent0 (){
 											Index: EditTaskValue.Index
 										})
 		
+									}}
+									onFocus={(e) => {
+										e.target.style.outline = "0.7px solid rgb(255,255,255)";
+									}}
+									onBlur={(e) => {
+										e.target.style.outline = "none";
 									}}
 									rows={1}
 									className="bg-black/90 min-h-[24px] rounded-md text-white p-1"></textarea>
