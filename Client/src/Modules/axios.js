@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export default axios.create({
-    baseURL : "https://will-do.onrender.com",
+    baseURL : "http://localhost:6565",
     withCredentials : true,
     timeout : 15000
 })
