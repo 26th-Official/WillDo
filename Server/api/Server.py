@@ -493,8 +493,17 @@ def Settings():
 
 # ?====================================================================
 
+@app.route("/test")
+def Test():
+    return jsonify({
+        "Status" : "success",
+        "Message" : "Its Working Correctly",
+    }),200
 
-if __name__ == '__main__':
-    # Now we are starting the server
-    app.run(port=6565)
-    # serve(app,host="0.0.0.0",port=6565)
+# ?====================================================================
+
+
+# if __name__ == '__main__':
+#     # Now we are starting the server
+#     app.run(port=6565)
+#     # serve(app,host="0.0.0.0",port=6565)
