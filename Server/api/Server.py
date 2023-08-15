@@ -69,7 +69,7 @@ app.config['JWT_COOKIE_SECURE'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
 
 # Email Configs
-Credential = Credentials.from_authorized_user_file(r"Server\api\Credentials.json")
+Credential = Credentials.from_authorized_user_file(r"Credentials.json")
 Service = build("gmail","v1",credentials=Credential)
 
 # *===================CRUD Operations=================================
