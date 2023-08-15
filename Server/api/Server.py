@@ -71,7 +71,7 @@ app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_COOKIE_SECURE'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
-app.config['JWT_COOKIE_SAMESITE'] = None
+app.config['JWT_COOKIE_SAMESITE'] = "None"
 
 # Email Configs
 Credential = Credentials.from_authorized_user_file(r"Server\api\Credentials.json")
