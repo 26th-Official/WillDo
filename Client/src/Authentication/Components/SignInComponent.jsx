@@ -85,7 +85,7 @@ const SignInComponent = ({setUserID}) => {
 			<div className="h-4" />
 			<div
 				className={`bg-primary p-5 w-[350px]  max-sm:w-[300px] flex flex-col items-center rounded-md border my-5`}>
-				{ErrorMessage !== "" && (
+				{ErrorMessage != "" && (
 					<div className="w-full">
 						<div className="flex items-center rounded-md p-2 bg-red-500">
 							<p className="text-left">{ErrorMessage}</p>
@@ -99,7 +99,7 @@ const SignInComponent = ({setUserID}) => {
 						id="Email_Field"
 						ref={(el) => (AuthRef.current[0] = el)}
 						onKeyDown={(e) => KeyPress(e, 1)}
-						value={AuthData !== {} && AuthData.Email}
+						value={AuthData != {} && AuthData.Email}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,
@@ -122,7 +122,7 @@ const SignInComponent = ({setUserID}) => {
 					<input
 						id="Password_Field"
 						ref={(el) => (AuthRef.current[1] = el)}
-						value={AuthData !== {} && AuthData.Password}
+						value={AuthData != {} && AuthData.Password}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,

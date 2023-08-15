@@ -75,7 +75,7 @@ const SignupComponent = () => {
 			<div className="h-4" />
 			<div
 				className={`bg-primary p-5 w-[350px] flex flex-col items-center rounded-md border my-5`}>
-				{ErrorMessage !== "" && (
+				{ErrorMessage != "" && (
 					<div className="w-full">
 						<div className=" rounded-md p-2 bg-red-500">
 							<p className="text-left">{ErrorMessage}</p>
@@ -88,7 +88,7 @@ const SignupComponent = () => {
 					<input
 						id="Firstname_Field"
 						ref={(el) => (AuthRef.current[0] = el)}
-						value={AuthData !== {} && AuthData.FirstName}
+						value={AuthData != {} && AuthData.FirstName}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,
@@ -111,7 +111,7 @@ const SignupComponent = () => {
 					<input
 						id="Lastname_Field"
 						ref={(el) => (AuthRef.current[1] = el)}
-						value={AuthData !== {} && AuthData.LastName}
+						value={AuthData != {} && AuthData.LastName}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,
@@ -133,7 +133,7 @@ const SignupComponent = () => {
 					<input
 						id="Email_Field"
 						ref={(el) => (AuthRef.current[2] = el)}
-						value={AuthData !== {} && AuthData.Email}
+						value={AuthData != {} && AuthData.Email}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,
@@ -156,7 +156,7 @@ const SignupComponent = () => {
 					<input
 						id="Password_Field"
 						ref={(el) => (AuthRef.current[3] = el)}
-						value={AuthData !== {} && AuthData.Password}
+						value={AuthData != {} && AuthData.Password}
 						onChange={(e) =>
 							setAuthData({
 								...AuthData,

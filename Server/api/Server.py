@@ -1,6 +1,12 @@
 # Importing the required modules
 
 # =====================================
+# Basic packages
+import os
+from pprint import pprint
+from datetime import timedelta,datetime
+
+
 # To make REST API
 from flask import Flask, jsonify, request
 
@@ -11,7 +17,8 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token,set_refresh_cookies,\
                                 set_access_cookies,unset_access_cookies,unset_refresh_cookies,\
                                 create_refresh_token,get_jwt_identity,decode_token
-                                
+            
+# For Production server 
 from waitress import serve                                
 
 # =====================================
@@ -20,13 +27,6 @@ from bson.objectid import ObjectId
 
 # To Hash the Password before storing in Database
 from bcrypt import gensalt,hashpw,checkpw
-
-# To handle date and time
-from datetime import timedelta,datetime
-from time import sleep
-
-# Pretty Print
-from pprint import pprint
 
 # =====================================
 # For accessing the Mongo DB
@@ -46,6 +46,10 @@ from random import randint
 
 
 # ?====================================================
+
+# File Configs
+
+BASE_PATH = os.getcwd()
 
 # DB configs
 uri = "mongodb+srv://26th_Official:qwerty123@willdo.svxpxac.mongodb.net/?retryWrites=true&w=majority"
@@ -67,9 +71,10 @@ app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_COOKIE_SECURE'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
+app.config['JWT_COOKIE_SAMESITE'] = None
 
 # Email Configs
-Credential = Credentials.from_authorized_user_file(r"Credentials.json")
+Credential = Credentials.from_authorized_user_file(r"Server\api\Credentials.json")
 Service = build("gmail","v1",credentials=Credential)
 
 # *===================CRUD Operations=================================
@@ -493,8 +498,8 @@ def Settings():
 
 # ?====================================================================
 
-@app.route("/test")
-def Test():
+@app.route("/health")
+def HealthTest():
     return jsonify({
         "Status" : "success",
         "Message" : "Its Working Correctly",
@@ -503,7 +508,7 @@ def Test():
 # ?====================================================================
 
 
-# if __name__ == '__main__':
-#     # Now we are starting the server
-#     app.run(port=6565)
-#     # serve(app,host="0.0.0.0",port=6565)
+if __name__ == '__main__':
+    # Now we are starting the server
+    # app.run(port=6565)
+    serve(app,host="0.0.0.0",port=6565)

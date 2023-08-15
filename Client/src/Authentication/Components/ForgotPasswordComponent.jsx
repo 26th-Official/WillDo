@@ -146,7 +146,7 @@ export default function ForgotPasswordComponent () {
                     <div className="h-4" />
                     <div
                         className={`bg-primary p-5 w-[350px]  max-sm:w-[300px] flex flex-col items-center rounded-md border my-5`}>
-                        {ErrorMessage !== "" && (
+                        {ErrorMessage != "" && (
                             <div className="w-full">
                                 <div className="flex items-center rounded-md p-2 bg-red-500">
                                     <p className="text-left">{ErrorMessage}</p>
@@ -244,7 +244,7 @@ export default function ForgotPasswordComponent () {
                                                 OTP: e.target.value,
                                             })
                                             
-                                            if (!NumberRegex.test(e.target.value) && e.target.value !== ""){
+                                            if (!NumberRegex.test(e.target.value) && e.target.value != ""){
                                                 setErrorMessage(Messages[5])
                                                 e.target.style.outline = "0.7px solid rgb(239,68,68)";
                                                 return
@@ -322,7 +322,7 @@ export default function ForgotPasswordComponent () {
                     <div className="h-4" />
                     <div
                         className={`bg-primary p-5 w-[350px]  max-sm:w-[300px] flex flex-col items-center rounded-md border my-5`}>
-                        {ErrorMessage !== "" && (
+                        {ErrorMessage != "" && (
                             <div className="w-full">
                                 <div className="flex items-center rounded-md p-2 bg-red-500">
                                     <p className="text-left">{ErrorMessage}</p>
@@ -355,7 +355,7 @@ export default function ForgotPasswordComponent () {
                                 }}
 
                                 onBlur={(e) => {
-                                    if (!PasswordRegex.test(e.target.value) && e.target.value !== "" ) {
+                                    if (!PasswordRegex.test(e.target.value) && e.target.value != "" ) {
                                         e.target.style.outline = "0.7px solid rgb(239,68,68)"
                                         setErrorMessage(Messages[9])
                                     } else if (PasswordRegex.test(e.target.value)) {
@@ -405,7 +405,7 @@ export default function ForgotPasswordComponent () {
                                 }}
 
                                 onBlur={(e) => {
-                                    if (e.target.value !== AuthData.NewPassword && e.target.value !== "") {
+                                    if (e.target.value != AuthData.NewPassword && e.target.value != "") {
                                         e.target.style.outline = "0.7px solid rgb(239,68,68)"
                                         setErrorMessage(Messages[8]) // Both Passwords doesn't match
                                     } else if (e.target.value === ""){

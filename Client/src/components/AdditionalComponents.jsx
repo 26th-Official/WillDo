@@ -165,15 +165,29 @@ export function ErrorModal({ErrorType}) {
 
 	else if (ErrorType === 401){
 		const [RemainingTime, setRemainingTime] = useState(5)
+		
+		useEffect(() => {
+			const Interval = setInterval(() => {
+				setRemainingTime((prev) => {
+					if (RemainingTime != 0){
+						return prev - 1
+					} else {
+						clearInterval(Interval)
+					}
+				})
+			},[1000])
+
+			return () => {
+				clearInterval(Interval);
+			};
+		},[])
+
 		useEffect(() => {
 			if (RemainingTime === 0){
 				SignOut()
-			} else {
-				setInterval(() => {
-					setRemainingTime(RemainingTime - 1)
-				},[1000])
 			}
 		},[RemainingTime])
+		
 		return (
 			<div className="bg-primary p-10 flex flex-col rounded-md border my-5">
 				<div>
