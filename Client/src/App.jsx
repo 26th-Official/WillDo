@@ -8,7 +8,7 @@ import ErrorComponent from './Components/ErrorComponent';
 import SignInComponent from './Authentication/Components/SignInComponent'
 import SignUpComponent from './Authentication/Components/SignUpComponent'
 import ResetPasswordComponent from './Authentication/Components/ResetPasswordComponent';
-import ForgotPasswordComponent from './Authentication/Components/FOrgotPasswordComponent';
+import ForgotPasswordComponent from './Authentication/Components/ForgotPasswordComponent';
 
 import AuthContext from "./Authentication/Components/AuthContext"
 
