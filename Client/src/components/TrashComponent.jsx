@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import { TokenRefresh } from './AdditionalComponents'
 
-import AuthContext from '../Authentication/Components/AuthContext';
+import AuthContext from '../Authentication/AuthContext';
 
 const TrashComponent = ({ Tasks, setTasks, DeletedTasks, setDeletedTasks, setError, DeleteLoading, setDeleteLoading, setisAddTaskLoading, isAddTaskLoading}) => {
 

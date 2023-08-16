@@ -10,7 +10,7 @@ import { MenubarComponent } from './MenubarComponent';
 import { NavbarComponent } from "./NavbarComponent";
 import TrashComponent from "./TrashComponent";
 
-import AuthContext from "../Authentication/Components/AuthContext";
+import AuthContext from "../Authentication/AuthContext";
 
 // **********************************************************************************************
 

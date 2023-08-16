@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "../Modules/axios";
 
-import AuthContext from "../Authentication/Components/AuthContext";
+import AuthContext from "../Authentication/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toInteger } from "lodash";
 import { TokenRefresh } from "./AdditionalComponents";

@@ -1,7 +1,7 @@
 import { useState, useContext } from "react"
 import { TokenRefresh } from "./AdditionalComponents"
 
-import AuthContext from "../Authentication/Components/AuthContext";
+import AuthContext from "../Authentication/AuthContext";
 
 export function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setAddTask, setError, setDeletedTasks, DeletedTasks }) {
     
