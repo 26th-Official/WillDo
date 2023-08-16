@@ -1,4 +1,4 @@
-import axios from '../Modules/axios'
+import axios from '../../Modules/axios'
 import React , {useContext, useEffect, useRef, useState} from 'react'
 import {Routes, Route, useLocation, useNavigate} from "react-router-dom"
 
@@ -14,7 +14,7 @@ export const AuthComponent = () => {
         FirstName : "",
         LastName : ""
     })
-    const {AuthState, setAuthState} = useContext(AuthContext)
+    const {setAuthState} = useContext(AuthContext)
 
     const Messages = ["","Username already exists!", "Incorrect Username or Password", "Please Enter a Valid Password", "Please enter all the Fields"]
     const [ErrorMessage, setErrorMessage] = useState(Messages[0]) // 👆

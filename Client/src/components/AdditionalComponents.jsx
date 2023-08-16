@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../Modules/axios";
 
-import AuthContext from "../Authentication/AuthContext";
+import AuthContext from "../Authentication/Components/AuthContext";
 import Convert2Dict from "../Modules/Utility";
 
 export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){

@@ -1,6 +1,6 @@
 import React, {useContext} from "react";
 import { useNavigate } from "react-router-dom";
-import AuthContext from "../Authentication/AuthContext";
+import AuthContext from "../Authentication/Components/AuthContext";
 import axios from "../Modules/axios";
 
 export default function HomeComponent() {
