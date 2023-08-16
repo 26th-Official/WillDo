@@ -5,12 +5,12 @@ import './App.css'
 import TaskComponent from './Components/TaskComponent'
 import HomeComponent from './Components/HomeComponent';
 import ErrorComponent from './Components/ErrorComponent';
-import SignInComponent from './Authentication/Components/SignInComponent'
-import SignUpComponent from './Authentication/Components/SignUpComponent'
-import ResetPasswordComponent from './Authentication/Components/ResetPasswordComponent';
-import ForgotPasswordComponent from './Authentication/Components/ForgotPasswordComponent';
+import SignInComponent from './Authentication/SignInComponent'
+import SignUpComponent from './Authentication/SignUpComponent'
+import ResetPasswordComponent from './Authentication/ResetPasswordComponent';
+import ForgotPasswordComponent from './Authentication/ForgotPasswordComponent';
 
-import AuthContext from "./Authentication/Components/AuthContext"
+import AuthContext from "./Authentication/AuthContext"
 
 function App() {
 	const [Authstate, setAuthstate] = useState((localStorage.getItem("Authstate") == "true" ? true : false)) 

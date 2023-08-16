@@ -1,6 +1,6 @@
-import axios from '../../Modules/axios'
+import axios from '../Modules/axios'
 import React , {useContext, useEffect, useRef, useState} from 'react'
-import {Routes, Route, Link, useLocation, useNavigate} from "react-router-dom"
+import {Routes, Route, useLocation, useNavigate} from "react-router-dom"
 
 import AuthContext from './AuthContext'
 
