@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export default axios.create({
-    baseURL : "http://localhost:6565",
+    baseURL : "https://willdo-ov3j.onrender.com",
     withCredentials : true,
     timeout : 15000
 })
