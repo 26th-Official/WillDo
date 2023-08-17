@@ -39,18 +39,23 @@ from pymongo.server_api import ServerApi
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 # for Encoding support
 import base64
 # For OTP generation
 from random import randint
 
+# for getting .env variables
+from dotenv import load_dotenv
+
 # =====================================
 
 # ?====================================================
 
+# .env variable configs
+load_dotenv(dotenv_path=".env")
+
 # DB configs
-uri = "mongodb+srv://26th_Official:qwerty123@willdo.svxpxac.mongodb.net/?retryWrites=true&w=majority"
+uri = os.getenv("MONGOURL")
 client = MongoClient(uri, server_api=ServerApi("1"))
 db = client["Data"]
 collection = db["UserData"]
@@ -63,7 +68,7 @@ CORS(app, supports_credentials=True)
 jwt = JWTManager(app)
 
 # Flask Variables for Flask-JWT
-app.config["JWT_SECRET_KEY"] = '846465498464987646sdf546548sd4651sfadf4as654fd'
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
@@ -72,7 +77,11 @@ app.config['JWT_CSRF_CHECK_FORM'] = True
 app.config['JWT_COOKIE_SAMESITE'] = "None"
 
 # Email Configs
-Credential = Credentials.from_authorized_user_file(r"Server\api\Credentials.json")
+Credential = Credentials.from_authorized_user_info({
+    "client_id": os.getenv("CLIENT_ID"),
+    "client_secret": os.getenv("CLIENT_SECRET"),
+    "refresh_token" : os.getenv("REFRESH_TOKEN"),
+})
 Service = build("gmail","v1",credentials=Credential)
 
 # *===================CRUD Operations=================================
@@ -393,9 +402,35 @@ def ForgotPassword():
             "$set" : {"OTP" : OTP}
         })
         
-        Message = MIMEText(f"Here is your OTP for Verification {OTP}")
+        HTML_Body = f"""
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="font-family: Arial, sans-serif; color: white;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: rgb(35, 35, 35); border: 1px solid rgb(64, 64, 64); border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+                    <div style="text-align: center;">
+                        <h1 style="color: rgb(250, 204, 21); text-decoration: underline; text-decoration-thickness: 1px;">WillDo</h1>
+                        <h3 style="color: rgb(255, 255, 255);">Password Reset OTP</h3>
+                    </div>
+                    <p>Hello,</p>
+                    <p>Your One-Time Password (OTP) for resetting your password on the WillDo is:</p>
+                    <div style="background-color: rgb(64, 64, 64); padding: 10px; text-align: center; border-radius: 5px;">
+                        <h2 style="margin: 0; color: rgb(250, 204, 21);">{OTP}</h2>
+                    </div>
+                    <p>Please use this OTP to reset your password.</p>
+                    <p>If you did not request this OTP, please ignore this email.</p>
+                    <p style="color: rgb(146, 146, 146); text-align: center;">Thank you for using WillDo.</p>
+                </div>
+            </body>
+        </html>
+        """
+        
+        Message = MIMEText(HTML_Body,"html")
+
         Message["to"] = data["Email"]
-        Message["from"] = "26thofficial.creator@gmail.com"
+        Message["from"] = "Will Do <26thofficial.creator@gmail.com>"
         Message["subject"] = "Verification from WillDo"
         MessageBody = {
             "raw" : base64.urlsafe_b64encode(Message.as_bytes()).decode()
