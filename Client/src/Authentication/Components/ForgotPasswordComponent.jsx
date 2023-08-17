@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../Modules/axios'
 
@@ -184,7 +184,9 @@ export default function ForgotPasswordComponent () {
                                     />        
                                 </div>
                                 <div className="h-3" />
+                                
                                 <button
+                                    ref={(el) => (AuthRef.current[1] = el)}
                                     onClick={() => {
                                         setErrorMessage(Messages[0]);
             
@@ -266,6 +268,7 @@ export default function ForgotPasswordComponent () {
                                 </div>
                                 <div className="h-3" />
                                 <button
+                                    ref={(el) => (AuthRef.current[1] = el)}
                                     onClick={() => {
                                         setErrorMessage(Messages[0]);
             
@@ -335,8 +338,8 @@ export default function ForgotPasswordComponent () {
                             <input
                                 id="NewPassword_Field"
                                 ref={(el) => (AuthRef.current[0] = el)}
+                                onKeyDown={(e) => KeyPress(e, 1)}
                                 value={AuthData.NewPassword}
-
                                 onChange={(e) => {
                                     setAuthData({
                                         ...AuthData,
@@ -385,8 +388,8 @@ export default function ForgotPasswordComponent () {
                             <input
                                 id="ConfirmPassword_Field"
                                 ref={(el) => (AuthRef.current[1] = el)}
+                                onKeyDown={(e) => KeyPress(e, 2)}
                                 value={AuthData.ConfirmPassword}
-
                                 onChange={(e) => {
                                     setAuthData({
                                         ...AuthData,
@@ -429,6 +432,7 @@ export default function ForgotPasswordComponent () {
                         </div>
                         <div className="h-3" />
                         <button
+                            ref={(el) => (AuthRef.current[2] = el)}
                             onClick={() => {
                                 setErrorMessage(Messages[0]);
 

@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef } from 'react'
+import { useContext, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../Modules/axios'
 
@@ -120,8 +120,8 @@ const ResetPasswordComponent = () => {
                     <input
                         id="NewPassword_Field"
                         ref={(el) => (AuthRef.current[1] = el)}
+                        onKeyDown={(e) => KeyPress(e, 2)}
                         value={AuthData.NewPassword}
-
                         onChange={(e) => {
                             setAuthData({
                                 ...AuthData,
@@ -170,8 +170,8 @@ const ResetPasswordComponent = () => {
                     <input
                         id="ConfirmPassword_Field"
                         ref={(el) => (AuthRef.current[2] = el)}
+                        onKeyDown={(e) => KeyPress(e, 3)}
                         value={AuthData.ConfirmPassword}
-
                         onChange={(e) => {
                             setAuthData({
                                 ...AuthData,
@@ -214,6 +214,7 @@ const ResetPasswordComponent = () => {
                 </div>
                 <div className="h-3" />
                 <button
+                    ref={(el) => (AuthRef.current[3] = el)}
                     onClick={() => {
                         setErrorMessage(Messages[0]);
 
@@ -222,7 +223,7 @@ const ResetPasswordComponent = () => {
                             AuthRef.current[1].value === "" || 
                             AuthRef.current[2].value === ""
                         ) {
-                            for (let i = 0; i < AuthRef.current.length; i++) {
+                            for (let i = 0; i < AuthRef.current.length - 1; i++) {
                                 if (AuthRef.current[i].value === "") {
                                     AuthRef.current[i].style.outline =
                                         "0.7px solid rgb(239,68,68)";

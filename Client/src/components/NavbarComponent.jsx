@@ -1,9 +1,9 @@
 import { useState, useContext } from "react"
-import { TokenRefresh } from "./AdditionalComponents"
 
+import { TokenRefresh } from "./AdditionalComponents"
 import AuthContext from "../Authentication/Components/AuthContext";
 
-export function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setAddTask, setError, setDeletedTasks, DeletedTasks }) {
+export default function NavbarComponent({TrashPage, setTrashPage, setMenuBarStatus, setAddTask, setError, setDeletedTasks, DeletedTasks }) {
     
     const { GuestMode } = useContext(AuthContext);
 

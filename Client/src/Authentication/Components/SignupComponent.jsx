@@ -1,10 +1,11 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import axios from "../../Modules/axios";
-import { HeaderComponent } from "../../Components/AdditionalComponents";
 import { useNavigate } from "react-router-dom";
 
-const SignupComponent = () => {
+import { HeaderComponent } from "../../Components/AdditionalComponents";
 
+const SignUpComponent = () => {
+	
 	const [AuthData, setAuthData] = useState({
 		Email: "",
 		Password: "",
@@ -65,9 +66,13 @@ const SignupComponent = () => {
         if (e.key === "Enter"){
             e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
             AuthRef.current[Index].focus()
-        }
+        } else if (e.key === "Enter" && Index === 1){
+			e.preventDefault();
+			document.getElementById("Signin_Button").click()
+		}
 
-    }
+	}
+
 
 	return (
 		<div className="flex flex-col items-center">
@@ -168,6 +173,7 @@ const SignupComponent = () => {
 								"0.7px solid rgba(255,255,255,1)")
 						}
 						onBlur={(e) => (e.target.style.outline = "none")}
+						onKeyDown={(e) => KeyPress(e, 4)}
 						required
 						placeholder="Please Enter your Password"
 						className="bg-black/90 min-h-[24px] w-full rounded-md text-white p-1 my-2"
@@ -177,6 +183,7 @@ const SignupComponent = () => {
 
 				<div className="h-3" />
 				<button
+					ref={(el) => (AuthRef.current[4] = el)}
 					onClick={() => {
 						setErrorMessage(Messages[0]);
 						if (
@@ -185,7 +192,7 @@ const SignupComponent = () => {
 							AuthRef.current[2].value === "" ||
 							AuthRef.current[3].value === ""
 						) {
-							for (let i = 0; i < AuthRef.current.length; i++) {
+							for (let i = 0; i < AuthRef.current.length - 1; i++) {
 								if (AuthRef.current[i].value === "") {
 									AuthRef.current[i].style.outline =
 										"0.7px solid rgb(239,68,68)";
@@ -214,6 +221,7 @@ const SignupComponent = () => {
 							Email: AuthRef.current[2].value,
 							Password: AuthRef.current[3].value,
 						};
+						
 						console.warn(UserData);
 						Authentication(UserData);
 					}}
@@ -255,6 +263,7 @@ const SignupComponent = () => {
 			</div>
 		</div>
 	);
+
 };
 
-export default SignupComponent;
+export default SignUpComponent

@@ -1,15 +1,12 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
-
+import { useContext, useEffect, useRef, useState } from "react";
 import { omit, isEqual } from "lodash";
-
 import { HuePicker } from 'react-color';
 
 // Custom Components
 import { DeleteTaskModal, ErrorModal, TaskOptions, TokenRefresh } from './AdditionalComponents';
-import { MenubarComponent } from './MenubarComponent';
-import { NavbarComponent } from "./NavbarComponent";
+import MenubarComponent from './MenubarComponent';
+import NavbarComponent from "./NavbarComponent";
 import TrashComponent from "./TrashComponent";
-
 import AuthContext from "../Authentication/Components/AuthContext";
 
 // **********************************************************************************************
@@ -1003,7 +1000,7 @@ export default function TaskComponent (){
 
 					<div>
 						{TrashPage ? (
-							<TrashComponent Tasks={Tasks} setTasks={setTasks} isAddTaskLoading={isAddTaskLoading} setisAddTaskLoading={setisAddTaskLoading} setDeleteLoading={setDeleteLoading} DeleteLoading={DeleteLoading} DeletedTasks={DeletedTasks} setDeletedTasks={setDeletedTasks} setError={setError} />
+							<TrashComponent setTasks={setTasks} isAddTaskLoading={isAddTaskLoading} setisAddTaskLoading={setisAddTaskLoading} setDeleteLoading={setDeleteLoading} DeleteLoading={DeleteLoading} DeletedTasks={DeletedTasks} setDeletedTasks={setDeletedTasks} setError={setError} />
 						) : (
 							<div>
 								{/* In here it first checks if the "Tasks" state has any content, */}

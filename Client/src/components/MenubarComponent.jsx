@@ -1,18 +1,17 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "../Modules/axios";
-
-import AuthContext from "../Authentication/Components/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toInteger } from "lodash";
-import { TokenRefresh } from "./AdditionalComponents";
 
-export function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) {
+import { TokenRefresh } from "./AdditionalComponents";
+import AuthContext from "../Authentication/Components/AuthContext";
+
+export default function MenubarComponent({ setMenuBarStatus, setTrashPage, TrashPage }) {
 	const { setAuthstate, setResetPassword, GuestMode, setGuestMode } = useContext(AuthContext);
 	const [Settings, setSettings] = useState(false);
 
 	const [SessionSettings, setSessionSettings] = useState(false)
 	const [SessionDuration, setSessionDuration] = useState(toInteger(localStorage.getItem("SessionDuration")));
-	const SessionDurationRef = useRef();
 
 	const NumberRegex = /^(?:\d{1,6})$/  
 

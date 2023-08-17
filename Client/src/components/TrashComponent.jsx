@@ -1,9 +1,9 @@
-import React, { useContext } from 'react'
+import { useContext } from 'react'
 import { TokenRefresh } from './AdditionalComponents'
 
 import AuthContext from '../Authentication/Components/AuthContext';
 
-const TrashComponent = ({ Tasks, setTasks, DeletedTasks, setDeletedTasks, setError, DeleteLoading, setDeleteLoading, setisAddTaskLoading, isAddTaskLoading}) => {
+const TrashComponent = ({ setTasks, DeletedTasks, setDeletedTasks, setError, DeleteLoading, setDeleteLoading, setisAddTaskLoading, isAddTaskLoading}) => {
 
 	const { GuestMode } = useContext(AuthContext);
 

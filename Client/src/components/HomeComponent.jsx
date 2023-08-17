@@ -1,7 +1,8 @@
-import React, {useContext} from "react";
+import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import AuthContext from "../Authentication/Components/AuthContext";
 import axios from "../Modules/axios";
+
+import AuthContext from "../Authentication/Components/AuthContext";
 
 export default function HomeComponent() {
 	const {Authstate, setAuthstate, setGuestMode, GuestMode} = useContext(AuthContext)
