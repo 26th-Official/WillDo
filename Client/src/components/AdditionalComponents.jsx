@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "../Modules/axios";
 
 import AuthContext from "../Authentication/Components/AuthContext";
-import Convert2Dict from "../Modules/Utility";
 
 export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 	
@@ -15,7 +14,6 @@ export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 			axios.post(Request, Payload, {
 				headers : {
 					"Content-Type" : "application/json",
-					"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
 				},
 				params : Parameters
 			}).then((res) => {
@@ -27,7 +25,6 @@ export function TokenRefresh(Request, Method="GET", Payload={}, Params={}){
 						axios.post(Request, Payload, {
 							headers : {
 								"Content-Type" : "application/json",
-								"X-CSRF-TOKEN" : Convert2Dict(document.cookie)["csrf_access_token"]
 							},
 							params : Parameters
 						}).then((res) => {
