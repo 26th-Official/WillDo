@@ -52,7 +52,7 @@ from dotenv import load_dotenv
 # ?====================================================
 
 # .env variable configs
-load_dotenv(dotenv_path=".env")
+load_dotenv(dotenv_path="/etc/secrets/.env")
 
 # DB configs
 uri = os.getenv("MONGOURL")
