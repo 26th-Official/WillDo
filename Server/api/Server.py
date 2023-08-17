@@ -428,9 +428,8 @@ def ForgotPassword():
         """
         
         Message = MIMEText(HTML_Body,"html")
-
         Message["to"] = data["Email"]
-        Message["from"] = "Will Do <26thofficial.creator@gmail.com>"
+        Message["from"] = "Will Do <willdo.client@gmail.com>"
         Message["subject"] = "Verification from WillDo"
         MessageBody = {
             "raw" : base64.urlsafe_b64encode(Message.as_bytes()).decode()
