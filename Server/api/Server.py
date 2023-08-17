@@ -17,9 +17,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token,set_refresh_cookies,\
                                 set_access_cookies,unset_access_cookies,unset_refresh_cookies,\
                                 create_refresh_token,get_jwt_identity,decode_token
-            
-# For Production server 
-from waitress import serve                                
+                                  
 
 # =====================================
 # This is to handle the object id in mongo db since it is not json serializable
@@ -539,9 +537,3 @@ def HealthTest():
     }),200
 
 # ?====================================================================
-
-
-if __name__ == '__main__':
-    # Now we are starting the server
-    # app.run(port=6565)
-    serve(app,host="0.0.0.0",port=6565)
