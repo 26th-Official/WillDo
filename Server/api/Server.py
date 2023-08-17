@@ -71,7 +71,9 @@ jwt = JWTManager(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_COOKIE_SECURE'] = True
+app.config['JWT_CSRF_CHECK_FORM'] = True
 app.config['JWT_COOKIE_SAMESITE'] = "None"
 
 # Email Configs
@@ -537,4 +539,8 @@ def HealthTest():
 
 # ?====================================================================
 
+if __name__ == '__main__':
+    # Now we are starting the server
+    # app.run(port=6565)
+    serve(app,host="0.0.0.0",port=6565)
 
