@@ -33,6 +33,7 @@ from bcrypt import gensalt,hashpw,checkpw
 from pymongo import UpdateOne
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+
 # =====================================
 # For Emailing Purposes
 from google.oauth2.credentials import Credentials
@@ -44,12 +45,9 @@ import base64
 # For OTP generation
 from random import randint
 
+# =====================================
 
 # ?====================================================
-
-# File Configs
-
-BASE_PATH = os.getcwd()
 
 # DB configs
 uri = "mongodb+srv://26th_Official:qwerty123@willdo.svxpxac.mongodb.net/?retryWrites=true&w=majority"

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext } from "react";
+import { useState, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../Modules/axios";
 
@@ -6,7 +6,7 @@ import { HeaderComponent } from "../../Components/AdditionalComponents";
 import AuthContext from "./AuthContext";
 
 const SignInComponent = ({setUserID}) => {
-	const {setAuthstate} = useContext(AuthContext)
+	const { setAuthstate } = useContext(AuthContext)
 
 	const [AuthData, setAuthData] = useState({
 		Email: "",
@@ -75,9 +75,8 @@ const SignInComponent = ({setUserID}) => {
         if (e.key === "Enter"){
             e.preventDefault(); // This is to prevent the default behaviour of the enter key which is to move to next line
             AuthRef.current[Index].focus()
-        }
-
-    }
+        } 
+	}
 
 	return (
 		<div className="flex flex-col items-center">
@@ -122,6 +121,7 @@ const SignInComponent = ({setUserID}) => {
 					<input
 						id="Password_Field"
 						ref={(el) => (AuthRef.current[1] = el)}
+						onKeyDown={(e) => KeyPress(e, 2)}
 						value={AuthData != {} && AuthData.Password}
 						onChange={(e) =>
 							setAuthData({
@@ -142,6 +142,7 @@ const SignInComponent = ({setUserID}) => {
 				</div>
 				<div className="h-3" />
 				<button
+					ref={(el) => (AuthRef.current[2] = el)}
 					onClick={() => {
 						setErrorMessage(Messages[0]);
 
@@ -149,7 +150,7 @@ const SignInComponent = ({setUserID}) => {
 							AuthRef.current[0].value === "" ||
 							AuthRef.current[1].value === ""
 						) {
-							for (let i = 0; i < AuthRef.current.length; i++) {
+							for (let i = 0; i < AuthRef.current.length - 1; i++) {
 								if (AuthRef.current[i].value === "") {
 									AuthRef.current[i].style.outline =
 										"0.7px solid rgb(239,68,68)";
@@ -164,6 +165,12 @@ const SignInComponent = ({setUserID}) => {
 						else if (!EmailRegex.test(AuthRef.current[0].value)) {
 							console.warn("Not valid Email ID!!");
 							setErrorMessage(Messages[5]);
+							return
+						}
+
+						else if (!PasswordRegex.test(AuthRef.current[1].value)) {
+							console.warn("Not valid Password");
+							setErrorMessage(Messages[3]);
 							return
 						}
 

@@ -1,6 +1,6 @@
 import axios from '../../Modules/axios'
-import React , {useContext, useEffect, useRef, useState} from 'react'
-import {Routes, Route, useLocation, useNavigate} from "react-router-dom"
+import { useContext, useEffect, useRef, useState } from 'react'
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom"
 
 import AuthContext from './AuthContext'
 
@@ -21,7 +21,6 @@ export const AuthComponent = () => {
 
     const [Loading, setLoading] = useState(false)
 
-   
     const AuthRef = useRef([])
 
     // ======================================================================
