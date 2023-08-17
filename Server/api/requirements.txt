@@ -5,6 +5,6 @@ Flask-JWT-Extended==4.5.2
 google-api-python-client 
 google-auth-httplib2 
 google-auth-oauthlib
-python-dotenv
+python-dotenv==1.0.0
 waitress==2.1.2
 pymongo==4.4.0
