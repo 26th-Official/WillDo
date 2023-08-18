@@ -29,7 +29,7 @@ Here are some screenshots showcasing the user interface of WillDo:
 
 ![Screenshot 2](./Assets/Signin-Signup.png)
 
-![Screenshot 3](./Assets/Tasks.png)
+![Screenshot 3](./Assets/Tasks.jpeg)
 
 ## Getting Started
 
