@@ -1,4 +1,8 @@
-# WillDo
+<p align="center">
+  <img src="https://github.com/26th-Official/WillDo/blob/main/Assets/Logo.png" alt="WillDo Logo" width="200">
+</p>
+
+<h1 align="center" style="font-size: 36px;">WillDo</h1>
 
 Welcome to WillDo, a stylish and functional ToDo application built with React and Python Flask!
 
@@ -21,11 +25,11 @@ Welcome to WillDo, a stylish and functional ToDo application built with React an
 
 Here are some screenshots showcasing the user interface of WillDo:
 
-<!-- Add screenshots here -->
 ![Screenshot 1](./Assets/Home.png)
-![Screenshot 2](./Assets/Signin.png)
-![Screenshot 3](./Assets/Signup.png)
-<!-- Add more screenshots as needed -->
+
+![Screenshot 2](./Assets/Signin-Signup.png)
+
+![Screenshot 3](./Assets/Tasks.png)
 
 ## Getting Started
 
@@ -67,4 +71,4 @@ This project is licensed under the [MIT License](/LICENSE).
 
 ---
 
-Enjoy using WillDo ToDo App! If you encounter any issues or have suggestions for improvements, please feel free to [open an issue](https://github.com/yourusername/WillDo-todo-app/issues).
+Enjoy using WillDo ToDo App! If you encounter any issues or have suggestions for improvements, please feel free to [open an issue](https://github.com/26th-Official/WillDo/issues).
